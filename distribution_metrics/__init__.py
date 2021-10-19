@@ -1,3 +1,4 @@
 from distribution_metrics.approximate_patch_mmd import MMDApproximate
 from distribution_metrics.patch_mmd import PatchMMD_RBF
 from distribution_metrics.patch_swd import PatchSWDLoss
+from distribution_metrics.patch_coherence_loss import PatchCoherentLoss

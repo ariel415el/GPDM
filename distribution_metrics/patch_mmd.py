@@ -32,6 +32,20 @@ class MultiBandWitdhRbfKernel:
         return loss
 
 
+class RbfKernel:
+    def __init__(self, sigma):
+        self.name = '-RbfKernel'
+        if sigma is None:
+            self.sigma = [2, 5, 10, 20, 40, 80]
+        else:
+            self.sigma = sigma
+
+    def __call__(self, X, S, **kwargs):
+        rbf_gram_matrix = torch.exp(get_distance_matrix(X) / (-2 * self.sigma ** 2))
+        loss = torch.sum(S * rbf_gram_matrix)
+        return loss
+
+
 class DotProductKernel:
     def __init__(self):
         self.name = '-DotProductKernel'
@@ -64,8 +78,10 @@ def compute_MMD(x_patches, y_patches, kernel):
     N = y_patches.size()[0]
     S = get_scale_matrix(M, N).to(x_patches.device)
     all_patches = torch.cat((x_patches, y_patches), 0)
-    # S[:N,:N] *= 0.9
-    # S[N:,N:] = 0
+    # S[:N,:N] *= 0.95
+    # S[N:,N:] *= 0.95
+    # S[:N,N:] *= 1.25
+    # S[N:,:N] *= 1.25
     return kernel(all_patches, S)
 
 
@@ -95,15 +111,24 @@ class PatchMMD(torch.nn.Module):
             return results
 
 
-class PatchMMD_RBF(PatchMMD):
+class PatchMMDMultiRBF(PatchMMD):
     def __init__(self, patch_size=7, stride=1, batch_reduction='mean', normalize_patch='none', sigmas=None):
         if sigmas == None:
             sigmas = [0.1, 0.05, 0.025, 0.01]
         sigmas = np.array(sigmas) * patch_size ** 2
         self.kernel = MultiBandWitdhRbfKernel(sigmas)
 
-        super(PatchMMD_RBF, self).__init__(patch_size=patch_size, stride=stride, normalize_patch=normalize_patch, batch_reduction=batch_reduction)
+        super(PatchMMDMultiRBF, self).__init__(patch_size=patch_size, stride=stride, normalize_patch=normalize_patch, batch_reduction=batch_reduction)
 
+
+class PatchMMD_RBF(PatchMMD):
+    def __init__(self, patch_size=7, stride=1, batch_reduction='mean', normalize_patch='none', sigma=None):
+        if sigma == None:
+            sigma = 0.05
+        sigma *= patch_size ** 2
+        self.kernel = RbfKernel(sigma)
+
+        super(PatchMMD_RBF, self).__init__(patch_size=patch_size, stride=stride, normalize_patch=normalize_patch, batch_reduction=batch_reduction)
 
 class PatchMMD_DotProd(PatchMMD):
     def __init__(self, patch_size=7, stride=1, batch_reduction='mean', normalize_patch='none'):

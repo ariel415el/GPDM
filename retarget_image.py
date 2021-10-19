@@ -6,7 +6,7 @@ import numpy as np
 import cv2
 import torch
 
-from utils import aspect_ratio_resize, get_pyramid, cv2pt, conv_gauss, get_kernel_gauss
+from utils import aspect_ratio_resize, get_pyramid, cv2pt, conv_gauss, get_kernel_gauss, match_image_sizes
 import torchvision.utils as vutils
 from torchvision import transforms
 
@@ -47,11 +47,6 @@ def match_patch_distributions(input_img, target_img, criteria, content_loss, con
         loss = criteria(optimized_variable, target_img_pt)
         all_losses.append(loss.item())
 
-        if conf.blur_loss > 0:
-            loss += conf.blur_loss * blur_loss(optimized_variable, target_img_pt)
-        if conf.tv_loss > 0:
-            loss += conf.tv_loss * tv_loss(optimized_variable)
-
         if content_loss:
             loss += content_loss(optimized_variable)
 
@@ -79,16 +74,23 @@ def match_patch_distributions(input_img, target_img, criteria, content_loss, con
     return torch.clip(optimized_variable.detach()[0], -1, 1)
 
 
-def get_initial_image(conf, h, w, raeget_img):
+def get_initial_image(conf, h, w, target_img):
     if conf.init == 'noise':
         synthesis = torch.randn((3, h, w)) * 0.1
     elif os.path.exists(conf.init):
-        synthesis = cv2pt(aspect_ratio_resize(cv2.imread(conf.init), max_dim=conf.resize))
+        synthesis = cv2pt(cv2.imread(conf.init))
+        synthesis = match_image_sizes(synthesis, target_img)
         synthesis = transforms.Resize((h, w), antialias=True)(synthesis)
-    else: # blur
-        synthesis = transforms.Resize((h, w), antialias=True)(raeget_img)
-        synthesis = conv_gauss(synthesis.unsqueeze(0), get_kernel_gauss(size=11, sigma=7, n_channels=3))[0]
-        synthesis += torch.randn((3, h, w)) * 0.01
+    elif conf.init == '+noise':
+        synthesis = transforms.Resize((h, w), antialias=True)(target_img)
+        synthesis += torch.normal(0, 0.5, size=(h, w))[None, :]
+    elif conf.init == 'blur':
+        synthesis = transforms.Resize((h, w), antialias=True)(target_img)
+        synthesis = conv_gauss(synthesis.unsqueeze(0), get_kernel_gauss(size=9, sigma=5, n_channels=3))[0]
+        # synthesis += torch.randn((3, h, w)) * 0.5
+        synthesis += torch.normal(0, 1, size=(h, w))[None, :]
+    else:
+        raise ValueError("No such init mode")
     return synthesis
 
 
@@ -106,6 +108,8 @@ def retarget_image(target_img_path, criteria, content_loss, conf, output_dir):
         h, w = int(lvl_target_img.shape[1] * conf.aspect_ratio[0]), int(lvl_target_img.shape[2] * conf.aspect_ratio[1])
         if lvl == 0:
             synthesis = get_initial_image(conf, h, w, target_img)
+            if content_loss:
+                content_loss.init(synthesis)
         else:
             synthesis = transforms.Resize((h, w), antialias=True)(synthesis)
 
@@ -113,7 +117,7 @@ def retarget_image(target_img_path, criteria, content_loss, conf, output_dir):
         vutils.save_image(synthesis, os.path.join(output_dir, f"org-{lvl}.png"), normalize=True)
 
         synthesis = match_patch_distributions(synthesis, lvl_target_img, criteria, content_loss, conf, output_dir=os.path.join(output_dir, str(lvl)))
-
+        # conf.num_steps += 50
         vutils.save_image(synthesis, os.path.join(output_dir, f"final-{lvl}.png"), normalize=True)
 
     vutils.save_image(synthesis, output_dir + ".png", normalize=True)

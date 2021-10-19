@@ -46,6 +46,30 @@ def aspect_ratio_resize(img, max_dim=256):
         return cv2.resize(img, (int(x/y*max_dim), max_dim))
 
 
+def match_image_sizes(input, target):
+    """resize and crop input image sot that it has the same aspect ratio as target"""
+    assert(len(input.shape) == 3)
+    input_h, input_w = input.shape[-2:]
+    target_h, target_w = target.shape[-2:]
+    input_aspect_ratio = input_h / input_w
+    target_aspect_ratio = target_h / target_w
+    if target_aspect_ratio > input_aspect_ratio:
+        input = transforms.Resize((target_h, int(input_w/input_h*target_h)), antialias=True)(input)
+        pixels_to_cut = input.shape[-1] - target_w
+        if pixels_to_cut > 0:
+            input = input[:, :, int(pixels_to_cut / 2):-int(pixels_to_cut / 2)]
+
+    else:
+        input = transforms.Resize((int(input_h/input_w*target_w), target_w), antialias=True)(input)
+        pixels_to_cut = input.shape[-2] - target_h
+        if pixels_to_cut > 0:
+            input = input[:, int(pixels_to_cut / 2):-int(pixels_to_cut / 2)]
+
+    input = transforms.Resize(target.shape[1:], antialias=True)(input)
+
+    return input
+
+
 def downscale(img, pyr_factor):
     assert 0 < pyr_factor < 1
     # y, x, c = img.shape
@@ -82,14 +106,40 @@ class SyntesisConfigurations:
     lr: float = 0.05
     num_steps: int = 500
     init: str = 'noise'
-    blur_loss: float = 0.0
-    tv_loss: float = 0.0
+    # device: str = 'cpu'
     device: str = 'cuda:0'
 
     def get_conf_tag(self):
         init_name = 'img' if os.path.exists(self.init) else self.init
-        if self.blur_loss > 0:
-            init_name += f"_BL({self.blur_loss})"
-        if self.tv_loss > 0:
-            init_name += f"_TV({self.tv_loss})"
         return f'AR-{self.aspect_ratio}_R-{self.resize}_S-{self.pyr_factor}x{self.n_scales}_I-{init_name}'
+
+
+def _fspecial_gauss_1d(size, sigma):
+    """Create 2-D gauss kernel"""
+    coords = torch.arange(size).to(dtype=torch.float)
+    coords -= size // 2
+
+    w = torch.exp(-(coords ** 2) / (2 * sigma ** 2))
+    w /= w.sum()
+
+    w = (w.reshape(size, 1) * w.reshape(1, size))
+
+    return w
+
+
+class GrayLevelLoss(torch.nn.Module):
+    def __init__(self, resize):
+        super(GrayLevelLoss, self).__init__()
+        self.img = None
+        self.resize = resize
+
+    def init(self, img):
+        self.img = transforms.Resize((self.resize, self.resize), antialias=True)(img)
+
+    def forward(self, x):
+        if self.img is None:
+            raise ValueError("Uninitialized with image")
+        from torchvision import transforms
+        img = transforms.Resize((x.shape[-2], x.shape[-1]), antialias=True)(self.img.to(x.device))
+        # return ((img.mean(0) - x[0].mean(0))**2).mean()
+        return ((img - x[0])**2).mean()
