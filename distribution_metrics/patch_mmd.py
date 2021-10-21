@@ -13,7 +13,17 @@ def get_distance_matrix(X):
     return X_norms - 2 * XX + X_norms.t()
 
 
-class MultiBandWitdhRbfKernel:
+class kernel:
+    def __call__(self, X, S, **kwargs):
+        """
+        Weithed Sum of kernel activation of All Xs with themselves
+        :param X: an Nxd matrix with N points
+        :param S: an Nxd matrix of weights for each kernel activation
+        :return: scalar
+        """
+        raise NotImplementedError
+
+class MultiBandWitdhRbfKernel(kernel):
     def __init__(self, sigmas=None):
         self.name = '-MultiBandWitdhRbfKernel'
         if sigmas is None:
@@ -32,7 +42,7 @@ class MultiBandWitdhRbfKernel:
         return loss
 
 
-class RbfKernel:
+class RbfKernel(kernel):
     def __init__(self, sigma):
         self.name = '-RbfKernel'
         if sigma is None:
@@ -45,8 +55,19 @@ class RbfKernel:
         loss = torch.sum(S * rbf_gram_matrix)
         return loss
 
+class InverseKernel(kernel):
+    def __init__(self, c):
+        self.name = '-InverseKernel'
+        self.c = c
 
-class DotProductKernel:
+    def __call__(self, X, S, **kwargs):
+        # loss = 1 / get_distance_matrix(X)
+        loss = self.c / torch.sqrt(self.c**2 + get_distance_matrix(X))
+        loss = torch.sum(S * loss)
+        return loss
+
+
+class DotProductKernel(kernel):
     def __init__(self):
         self.name = '-DotProductKernel'
 
@@ -78,8 +99,8 @@ def compute_MMD(x_patches, y_patches, kernel):
     N = y_patches.size()[0]
     S = get_scale_matrix(M, N).to(x_patches.device)
     all_patches = torch.cat((x_patches, y_patches), 0)
-    # S[:N,:N] *= 0.95
-    # S[N:,N:] *= 0.95
+    # S[:N,:N] *= 0
+    # S[N:,N:] *= 0
     # S[:N,N:] *= 1.25
     # S[N:,:N] *= 1.25
     return kernel(all_patches, S)
@@ -131,10 +152,19 @@ class PatchMMD_RBF(PatchMMD):
         super(PatchMMD_RBF, self).__init__(patch_size=patch_size, stride=stride, normalize_patch=normalize_patch, batch_reduction=batch_reduction)
 
 class PatchMMD_DotProd(PatchMMD):
-    def __init__(self, patch_size=7, stride=1, batch_reduction='mean', normalize_patch='none'):
+    def __init__(self, patch_size=7, stride=1, batch_reduction='mean', normalize_patch='mean'):
         self.kernel = DotProductKernel()
 
         super(PatchMMD_DotProd, self).__init__(patch_size=patch_size, stride=stride, normalize_patch=normalize_patch, batch_reduction=batch_reduction)
+
+
+class PatchMMD_Inverse(PatchMMD):
+    def __init__(self, patch_size=7, stride=1, batch_reduction='mean', normalize_patch='none', c=None):
+        if c == None:
+            c = 1
+        self.kernel = InverseKernel(c)
+
+        super(PatchMMD_Inverse, self).__init__(patch_size=patch_size, stride=stride, normalize_patch=normalize_patch, batch_reduction=batch_reduction)
 
 
 

@@ -1,11 +1,11 @@
 import os
 import distribution_metrics
-from retarget_image import retarget_image
+from synthesis import synthesize_image
 from utils import SyntesisConfigurations, get_file_name
 
 input_and_target_images = [
-    # ('../images/analogies/duck_mosaic.jpg', '../images/analogies/S_char.jpg'),
-    # ('../images/analogies/S_char.jpg', '../images/analogies/duck_mosaic.jpg'),
+    ('../images/analogies/duck_mosaic.jpg', '../images/analogies/S_char.jpg'),
+    ('../images/analogies/S_char.jpg', '../images/analogies/duck_mosaic.jpg'),
     # ('../images/style_transfer/trump.jpg', '../images/style_transfer/obama1.jpg'),
     # ('../images/analogies/kanyon2.jpg', '../images/analogies/tower.jpg'),
     # ('../images/analogies/tower.jpg', '../images/analogies/kanyon2.jpg'),
@@ -25,7 +25,7 @@ def main():
 
         # content_loss = GrayLevelLoss(content_image_path, 32)
         content_loss = None
-        retarget_image(style_image_path, criteria, content_loss, conf, outputs_dir)
+        synthesize_image(style_image_path, criteria, content_loss, conf, outputs_dir)
 
 
 if __name__ == '__main__':

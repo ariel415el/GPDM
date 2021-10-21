@@ -1,5 +1,5 @@
 import distribution_metrics
-from retarget_image import retarget_image
+from synthesis import synthesize_image
 from utils import get_file_name, SyntesisConfigurations, cv2pt
 
 import torch
@@ -20,7 +20,7 @@ def generate_texture():
 
         outputs_dir = f'outputs/texture_synthesis/{get_file_name(texture_image_path)}/{criteria.name}_{conf.get_conf_tag()}'
 
-        retarget_image(texture_image_path, criteria, None, conf, outputs_dir)
+        synthesize_image(texture_image_path, criteria, None, conf, outputs_dir)
 
 
 def style_transfer():
@@ -47,7 +47,7 @@ def style_transfer():
 
         # content_loss = GrayLevelLoss(content_image_path, 32)
         content_loss = None
-        retarget_image(style_image_path, criteria, content_loss, conf, outputs_dir)
+        synthesize_image(style_image_path, criteria, content_loss, conf, outputs_dir)
 
 
 def edit_image():
@@ -72,7 +72,7 @@ def edit_image():
             outputs_dir = f'outputs/image_editing/{get_file_name(content_image_path)}-to-{get_file_name(style_image_path)}/{criteria.name}_{conf.get_conf_tag()}'
 
             # content_loss = GrayLevelLoss(content_image_path, 256)
-            retarget_image(style_image_path, criteria, None, conf, outputs_dir)
+            synthesize_image(style_image_path, criteria, None, conf, outputs_dir)
 
 
 def image_resampling():
@@ -109,7 +109,7 @@ def image_resampling():
             outputs_dir = f'outputs/image_resampling/{get_file_name(input_image_path)}/{criteria.name}_{conf.get_conf_tag()}'
 
             # content_loss = GrayLevelLoss(content_image_path, 256)
-            retarget_image(input_image_path, criteria, None, conf, outputs_dir)
+            synthesize_image(input_image_path, criteria, None, conf, outputs_dir)
 
 
 def image_retargeting():
@@ -142,7 +142,7 @@ def image_retargeting():
             outputs_dir = f'outputs/image_retargeting/{get_file_name(input_image_path)}/{criteria.name}_{conf.get_conf_tag()}'
 
             # content_loss = GrayLevelLoss(input_image_path, 256)
-            retarget_image(input_image_path, criteria, None, conf, outputs_dir)
+            synthesize_image(input_image_path, criteria, None, conf, outputs_dir)
 
 
 if __name__ == '__main__':

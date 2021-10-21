@@ -1,6 +1,6 @@
 import os
 import distribution_metrics
-from retarget_image import retarget_image
+from synthesis import synthesize_image
 from utils import SyntesisConfigurations, get_file_name
 
 images = [
@@ -22,11 +22,11 @@ def main():
 
         for i in range(3):
 
-            conf = SyntesisConfigurations(pyr_factor=0.75, n_scales=9, lr=0.05, num_steps=150, init='blur', resize=512)
+            conf = SyntesisConfigurations(pyr_factor=0.75, n_scales=9, lr=0.03, num_steps=150, init='blur', resize=512)
 
             outputs_dir = f'outputs/resampling_natural_images/{get_file_name(input_image_path)}/{criteria.name}_{conf.get_conf_tag()}'
 
-            retarget_image(input_image_path, criteria, None, conf, outputs_dir)
+            synthesize_image(input_image_path, criteria, None, conf, outputs_dir)
 
 
 if __name__ == '__main__':

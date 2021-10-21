@@ -1,5 +1,5 @@
 import distribution_metrics
-from retarget_image import retarget_image
+from synthesis import synthesize_image
 from utils import SyntesisConfigurations, get_file_name
 
 images = [
@@ -19,7 +19,7 @@ def main():
 
         outputs_dir = f'outputs/periodic_textures/{get_file_name(texture_image_path)}/{criteria.name}_{conf.get_conf_tag()}'
 
-        retarget_image(texture_image_path, criteria, None, conf, outputs_dir)
+        synthesize_image(texture_image_path, criteria, None, conf, outputs_dir)
 
 if __name__ == '__main__':
     main()
