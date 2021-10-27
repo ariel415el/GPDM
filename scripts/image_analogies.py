@@ -16,8 +16,9 @@ def main():
     """
     Smaller patch size adds variablility but may ruin large objects
     """
-    criteria = distribution_metrics.PatchSWDLoss(patch_size=3, stride=1, num_proj=256, normalize_patch='none')
-    conf = SyntesisConfigurations(n_scales=0, lr=0.05, num_steps=300, resize=512)
+    criteria = distribution_metrics.PatchCoherentLoss(patch_size=3, stride=1, mode='batched_detached-l2')
+    # criteria = distribution_metrics.PatchSWDLoss(patch_size=3, stride=1, num_proj=256, normalize_patch='none')
+    conf = SyntesisConfigurations(n_scales=0, lr=0.05, num_steps=30, resize=512)
     for style_image_path, content_image_path in input_and_target_images:
         conf.init = content_image_path
 

@@ -35,7 +35,17 @@ def compute_patch_coherence(input_patches, target_patches, patch_size, mode='l2'
 
     elif mode == 'l2':
         dist_matrix = ((input_patches[None, :] - target_patches[:, None])**2).mean(2) # (dist_matrix[i,j] = d(target_patches[i], input_patches[j])
-
+    elif mode == 'batched_detached-l2':
+        # compute dist_matrix in mini-batches to store NxM matrix instead of NxMxPsize
+        dist_matrix = torch.zeros((len(input_patches), len(target_patches)), dtype=torch.float16).to(input_patches.device)
+        b = 64
+        n_batches = len(input_patches) // b
+        for i in range(n_batches):
+            dist_matrix[:, i*b:(i+1)*b] = ((input_patches[None, i*b:(i+1)*b].detach() - target_patches[:, None]) ** 2).mean(2)
+        if len(input_patches) % b != 0:
+            dist_matrix[:, n_batches*b:] = ((input_patches[None, n_batches*b:].detach() - target_patches[:, None]) ** 2).mean(2)
+        min_indices = torch.min(dist_matrix, dim=0)[1]
+        return ((input_patches - target_patches[min_indices])**2).mean()
     else:
         loss = 0
         for i in range(input_patches.shape[0]):
@@ -67,8 +77,6 @@ class PatchCoherentLoss(torch.nn.Module):
         x_patches = extract_patches(x, self.patch_size, self.stride, 'none')
         y_patches = extract_patches(y, self.patch_size, self.stride, 'none')
 
-        # x_patches = (((1 + x_patches) / 2) * 255).to(torch.uint8)
-        # y_patches = (((1 + y_patches) / 2) * 255).to(torch.uint8)
 
         results = []
         for i in range(b):
@@ -82,8 +90,12 @@ class PatchCoherentLoss(torch.nn.Module):
             return results
 
 if __name__ == '__main__':
-    input_image = torch.randn((3,90,90))
-    target_image = torch.randn((3,90,90)) * 2
+    input_image = torch.randn((1, 3,90,90)).cuda()
+    target_image = torch.randn((1, 3,90,90)).cuda() * 2
 
-
-    compute_patch_coherence(input_image, target_image, 5, 3)
+    from time import time
+    start = time()
+    loss = PatchCoherentLoss(5, 1, 'batched_detached-l2').cuda()
+    for i in range(10):
+        loss(input_image, target_image)
+    print(f"Time: {(time() - start) / 10}")

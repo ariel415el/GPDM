@@ -21,7 +21,7 @@ def main():
     for input_image_path in images:
         for i in range(3):
 
-            conf = SyntesisConfigurations(pyr_factor=0.75, n_scales=5, lr=0.05, num_steps=150, init='blur', resize=256)
+            conf = SyntesisConfigurations(pyr_factor=0.75, n_scales=7, lr=0.02, num_steps=150, init='blur', resize=256)
 
             outputs_dir = f'outputs/resampling_const_background/{get_file_name(input_image_path)}/{criteria.name}_{conf.get_conf_tag()}'
 

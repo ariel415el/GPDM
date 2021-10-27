@@ -53,6 +53,7 @@ class RbfKernel(kernel):
     def __call__(self, X, S, **kwargs):
         rbf_gram_matrix = torch.exp(get_distance_matrix(X) / (-2 * self.sigma ** 2))
         loss = torch.sum(S * rbf_gram_matrix)
+        # loss = torch.log(loss)
         return loss
 
 class InverseKernel(kernel):

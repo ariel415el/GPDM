@@ -15,13 +15,7 @@ from torchvision import transforms
 #     w_variance = torch.mean(torch.pow(img[:,:,:,:-1] - img[:,:,:,1:], 2))
 #     h_variance = torch.mean(torch.pow(img[:,:,:-1,:] - img[:,:,1:,:], 2))
 #     return h_variance + w_variance
-#
-#
-# def blur_loss(x, y):
-#     h,w = x.shape[-1] // 2, x.shape[-2] // 2
-#     x_ds = transforms.Resize((h, w), antialias=True)(x)
-#     y_ds = transforms.Resize((h, w), antialias=True)(y)
-#     return torch.mean(torch.abs(x_ds - y_ds))
+
 
 
 def match_patch_distributions(input_img, target_img, criteria, content_loss, conf, output_dir):
@@ -56,17 +50,16 @@ def match_patch_distributions(input_img, target_img, criteria, content_loss, con
         if i % 100 == 0:
             for g in optim.param_groups:
                 g['lr'] *= 0.9
-        if i % 100 == 0:
+        if i % 50 == 0:
             os.makedirs(output_dir, exist_ok=True)
             vutils.save_image(torch.clip(optimized_variable, -1, 1), f"{output_dir}/output-{i}.png", normalize=True)
-        if i % 100 == 0:
+        if i % 10 == 0:
             fig1 = plt.figure()
             ax = fig1.add_subplot(111)
 
             all_means.append(np.mean(all_losses[-100:]))
-            ax.plot(np.arange(len(all_losses)), np.log(all_losses),
-                    label=f'{criteria.name}: {all_means[-1]:.6f}')
-            # ax.plot((1 + np.arange(len(all_means))) * 100, np.log(all_means), c='y')
+            # ax.plot(np.arange(len(all_losses)), np.log(all_losses), label=f'{criteria.name}: {all_means[-1]:.6f}')
+            ax.plot(np.arange(len(all_losses)), all_losses, label=f'{criteria.name}: {all_means[-1]:.6f}')
             ax.legend()
             fig1.savefig(f"{output_dir}/train_loss.png")
             plt.close(fig1)
@@ -83,12 +76,12 @@ def get_initial_image(conf, h, w, target_img):
         synthesis = transforms.Resize((h, w), antialias=True)(synthesis)
     elif conf.init == '+noise':
         synthesis = transforms.Resize((h, w), antialias=True)(target_img)
-        synthesis += torch.normal(0, 0.5, size=(h, w))[None, :]
+        synthesis += torch.normal(0, 1, size=(h, w))[None, :]
     elif conf.init == 'blur':
         synthesis = transforms.Resize((h, w), antialias=True)(target_img)
         synthesis = conv_gauss(synthesis.unsqueeze(0), get_kernel_gauss(size=9, sigma=5, n_channels=3))[0]
         # synthesis += torch.randn((3, h, w)) * 0.5
-        synthesis += torch.normal(0, 0.5, size=(h, w))[None, :]
+        synthesis += torch.normal(0, 0.75, size=(h, w))[None, :]
     else:
         raise ValueError("No such init mode")
     return synthesis
@@ -100,7 +93,9 @@ def synthesize_image(target_img_path, criteria, content_loss, conf, output_dir):
     os.makedirs(output_dir, exist_ok=True)
 
     target_img = cv2.imread(target_img_path)
-    target_img = cv2pt(aspect_ratio_resize(target_img, max_dim=conf.resize))
+    if conf.resize:
+        target_img = aspect_ratio_resize(target_img, max_dim=conf.resize)
+    target_img = cv2pt(target_img)
     target_pyramid = get_pyramid(target_img, conf.n_scales, conf.pyr_factor)
 
     for lvl, lvl_target_img in enumerate(target_pyramid):
