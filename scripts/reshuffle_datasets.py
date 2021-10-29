@@ -1,8 +1,7 @@
 import os
 import distribution_metrics
-from synthesis import synthesize_image
-from utils import SyntesisConfigurations, get_file_name
-import torchvision.utils as vutils
+from GPDM import GPDM
+from utils import save_image, get_file_name
 
 image_paths = []
 # dataset_dir = '/home/ariel/university/GPDM/GPDM/tests/downloaded_results/SIGD16_org'
@@ -16,21 +15,18 @@ def main():
     """
     Smaller patch size adds variablility but may ruin large objects
     """
-    for (p, l) in [(5, 8)]:
-        dataset_name = os.path.basename(dataset_dir) + f'_p-{p}_l-{l}'
-        criteria = distribution_metrics.PatchSWDLoss(patch_size=p, stride=1, num_proj=16, normalize_patch='none')
-        os.makedirs(f'outputs/resampling_dataset/{dataset_name}/generated_images', exist_ok=True)
-        for input_image_path in image_paths[:5]:
-            for i in range(10):
+    criteria = distribution_metrics.PatchSWDLoss(patch_size=5, stride=1, num_proj=32, normalize_patch='mean')
+    model = GPDM(pyr_factor=0.85, n_scales=13, lr=0.05, num_steps=250, init='noise', noise_sigma=1.5)
+    output_dir = f'outputs/resampling_dataset/{os.path.basename(dataset_dir)}_{criteria.name}_{model.name}'
+    for input_image_path in image_paths:
+        for i in range(10):
+            fname, ext = os.path.splitext(os.path.basename(input_image_path))[:2]
 
-                conf = SyntesisConfigurations(pyr_factor=0.75, n_scales=l, lr=0.05, num_steps=500, init='+noise', resize=None)
+            debug_dir = f'{output_dir}/optimization/{fname}-{i}'
 
-                outputs_dir = f'outputs/resampling_dataset/{dataset_name}/optimization/{get_file_name(input_image_path)}/{criteria.name}_{conf.get_conf_tag()}'
+            result = model.run(input_image_path, criteria, debug_dir)
 
-                result = synthesize_image(input_image_path, criteria, None, conf, outputs_dir)
-                fname, ext = os.path.splitext(os.path.basename(input_image_path))[:2]
-                fname = f"{fname}${i}.{ext}"
-                vutils.save_image(result, f'outputs/resampling_dataset/{dataset_name}/generated_images/{fname}', normalize=True)
+            save_image(result, f'{output_dir}/generated_images/{fname}${i}{ext}')
 
 if __name__ == '__main__':
     main()

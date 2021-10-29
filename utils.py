@@ -4,9 +4,11 @@ from typing import Tuple
 
 import cv2
 import numpy as np
+from matplotlib import pyplot as plt
 from torchvision import transforms
 import torch
 import torch.nn.functional as F
+import torchvision.utils as vutils
 
 
 def get_kernel_gauss(size=5, sigma=1.0, n_channels=1):
@@ -26,14 +28,13 @@ def get_kernel_gauss(size=5, sigma=1.0, n_channels=1):
 def conv_gauss(img, kernel):
     n_channels, _, kw, kh = kernel.shape
     img = F.pad(img, (kw // 2, kh // 2, kw // 2, kh // 2), mode='replicate')
-    return F.conv2d(img, kernel, groups=n_channels)
+    return F.conv2d(img, kernel.to(img.device), groups=n_channels)
 
 
 def cv2pt(img):
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     img = img.astype(np.float64) / 255.
     img = img * 2 - 1
-    # img *= 2
     img = torch.from_numpy(img.transpose(2, 0, 1)).float()
 
     return img
@@ -143,3 +144,18 @@ class GrayLevelLoss(torch.nn.Module):
         img = transforms.Resize((x.shape[-2], x.shape[-1]), antialias=True)(self.img.to(x.device))
         # return ((img.mean(0) - x[0].mean(0))**2).mean()
         return ((img - x[0])**2).mean()
+
+
+def save_image(img, path):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    vutils.save_image(img, path, normalize=True)
+
+
+def plot_loss(losses, path):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    fig1 = plt.figure()
+    ax = fig1.add_subplot(111)
+    # ax.plot(np.arange(len(losses)), losses)
+    ax.plot(np.arange(len(losses)), np.log(losses))
+    fig1.savefig(path)
+    plt.close(fig1)
