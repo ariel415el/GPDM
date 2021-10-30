@@ -49,24 +49,24 @@ def aspect_ratio_resize(img, max_dim=256):
 
 def match_image_sizes(input, target):
     """resize and crop input image sot that it has the same aspect ratio as target"""
-    assert(len(input.shape) == 3)
+    # assert(len(input.shape) == len(target.shape) == 4)
     input_h, input_w = input.shape[-2:]
     target_h, target_w = target.shape[-2:]
-    input_aspect_ratio = input_h / input_w
-    target_aspect_ratio = target_h / target_w
-    if target_aspect_ratio > input_aspect_ratio:
+    input_scale_factor = input_h / input_w
+    target_scale_factor = target_h / target_w
+    if target_scale_factor > input_scale_factor:
         input = transforms.Resize((target_h, int(input_w/input_h*target_h)), antialias=True)(input)
         pixels_to_cut = input.shape[-1] - target_w
         if pixels_to_cut > 0:
-            input = input[:, :, int(pixels_to_cut / 2):-int(pixels_to_cut / 2)]
+            input = input[:, :, :, int(pixels_to_cut / 2):-int(pixels_to_cut / 2)]
 
     else:
         input = transforms.Resize((int(input_h/input_w*target_w), target_w), antialias=True)(input)
         pixels_to_cut = input.shape[-2] - target_h
         if pixels_to_cut > 0:
-            input = input[:, int(pixels_to_cut / 2):-int(pixels_to_cut / 2)]
+            input = input[:, :, int(pixels_to_cut / 2):-int(pixels_to_cut / 2)]
 
-    input = transforms.Resize(target.shape[1:], antialias=True)(input)
+    input = transforms.Resize(target.shape[-2:], antialias=True)(input)
 
     return input
 
@@ -97,24 +97,6 @@ def quantize_image(img, N_colors):
 def get_file_name(path):
     return os.path.splitext(os.path.basename(path))[0]
 
-
-@dataclass
-class SyntesisConfigurations:
-    aspect_ratio: Tuple[float, float] = (1.,1.)
-    resize: int = 256
-    pyr_factor: float = 0.7
-    n_scales: int = 5
-    lr: float = 0.05
-    num_steps: int = 500
-    init: str = 'noise'
-    # device: str = 'cpu'
-    device: str = 'cuda:0'
-
-    def get_conf_tag(self):
-        init_name = 'img' if os.path.exists(self.init) else self.init
-        return f'AR-{self.aspect_ratio}_R-{self.resize}_S-{self.pyr_factor}x{self.n_scales}_I-{init_name}'
-
-
 def _fspecial_gauss_1d(size, sigma):
     """Create 2-D gauss kernel"""
     coords = torch.arange(size).to(dtype=torch.float)
@@ -128,16 +110,27 @@ def _fspecial_gauss_1d(size, sigma):
     return w
 
 
+class LossesList(torch.nn.Module):
+    def __init__(self, losses, weights, name=None):
+        super(LossesList, self).__init__()
+        self.weights = weights
+
+        self.losses = torch.nn.ModuleList(losses)
+
+        self.name = name if name else "+".join([f"{w}*{l.name}" for l,w in zip(self.losses, self.weights)])
+
+    def forward(self, x, y):
+        return sum([self.losses[i](x, y) * self.weights[i] for i in range(len(self.losses))])
+
+
 class GrayLevelLoss(torch.nn.Module):
-    def __init__(self, resize):
+    def __init__(self, img, resize):
         super(GrayLevelLoss, self).__init__()
         self.img = None
         self.resize = resize
-
-    def init(self, img):
-        self.img = transforms.Resize((self.resize, self.resize), antialias=True)(img)
-
-    def forward(self, x):
+        self.img = transforms.Resize((resize, resize), antialias=True)(img)
+        self.name = f'GrayLevelLoss({resize})'
+    def forward(self, x, y):
         if self.img is None:
             raise ValueError("Uninitialized with image")
         from torchvision import transforms
@@ -148,7 +141,7 @@ class GrayLevelLoss(torch.nn.Module):
 
 def save_image(img, path):
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    vutils.save_image(img, path, normalize=True)
+    vutils.save_image(torch.clip(img, -1, 1), path, normalize=True)
 
 
 def plot_loss(losses, path):

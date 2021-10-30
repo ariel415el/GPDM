@@ -28,16 +28,16 @@ def main():
     criteria = distribution_metrics.PatchSWDLoss(patch_size=11, stride=1, num_proj=512, normalize_patch='none')
     # criteria = distribution_metrics.PatchSWDLoss(patch_size=7, stride=1, num_proj=8, normalize_patch='mean')
     for input_image_path in images:
-        for aspect_ratio in [(1, 0.5), (1, 1.5)]:
+        for scale_factor in [(1, 0.5), (1, 1.5)]:
             for i in range(3):
-                model = GPDM(pyr_factor=0.75, n_scales=7, aspect_ratio=aspect_ratio, lr=0.02, num_steps=400, init='blured_target', noise_sigma=1.5)
-                # model = GPDM(pyr_factor=0.85, n_scales=13, aspect_ratio=aspect_ratio, lr=0.05, num_steps=150, init='blured_target', noise_sigma=1.5)
+                model = GPDM(pyr_factor=0.75, n_scales=7, scale_factor=scale_factor, lr=0.02, num_steps=400, init='blured_target', noise_sigma=1.5)
+                # model = GPDM(pyr_factor=0.85, n_scales=13, scale_factor=scale_factor, lr=0.05, num_steps=150, init='blured_target', noise_sigma=1.5)
 
-                debug_dir = f'outputs/retarget_images/{get_file_name(input_image_path)}/{criteria.name}_{model.name}'
+                debug_dir = f'outputs/retarget_images/debug_images/{get_file_name(input_image_path)}/{criteria.name}_{model.name}'
 
                 result = model.run(input_image_path, criteria, debug_dir)
 
                 fname, ext = os.path.splitext(os.path.basename(input_image_path))[:2]
-                save_image(result, f'outputs/retarget_images/generated_images/{fname}_{aspect_ratio}${i}{ext}')
+                save_image(result, f'outputs/retarget_images/generated_images/{fname}_{scale_factor}${i}{ext}')
 if __name__ == '__main__':
     main()

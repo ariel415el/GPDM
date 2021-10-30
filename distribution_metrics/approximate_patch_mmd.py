@@ -2,15 +2,6 @@ import torch
 from torch.nn.functional import conv2d, pad
 import numpy as np
 
-# try:
-#     import pykeops as pko
-#     # pko.clean_pykeops()
-#     from pykeops.torch import LazyTensor
-# except:
-# print("couldn't import pykeops")
-
-pko = None
-
 
 def get_reduction_fn(reduction):
     if reduction == "mean":
@@ -133,16 +124,6 @@ class GlobalPoolDistance(torch.nn.Module):
         self.use_keops = use_keops
         self.normalize_patch = normalize_patch
 
-    def _pooled_distance_kpo(self, x, y):
-        x_i = self.x_unfolder(x).permute(dims=(0, 2, 1)).unsqueeze(dim=-2).contiguous()
-        x_i = LazyTensor(x_i)
-        d = x_i.shape[1]
-        y_j = LazyTensor(self.y_unfolder(y).permute(dims=(0, 2, 1)).unsqueeze(dim=-3).contiguous())
-        D_ij = ((x_i - y_j) ** 2).sum(dim=-1)
-        K_ij = ((-1 / self.rbf_sigma ** 2) * D_ij).exp()
-        K_ij = K_ij.sum(dim=1) / d
-        return K_ij.mean(dim=1)
-
     def _pooled_distance_unnormalized(self, x, y):
         x_uf = self.x_unfolder(x)
         y_uf = self.y_unfolder(y)
@@ -161,50 +142,3 @@ class GlobalPoolDistance(torch.nn.Module):
                          self._pooled_distance_unnormalized(y, y).mean(dim=(1, 2))
 
         return self.batch_reduction(batch_loss)
-
-
-class MMDExact(torch.nn.Module):
-    def __init__(self, window_size=32, window_stride=16, batch_reduction='mean', pad=True, **pooling_kwargs):
-        super().__init__()
-        self.name = 'MMDExact'
-        self.window_stride = window_stride
-
-        self.pooler = GlobalPoolDistance(**pooling_kwargs, batch_reduction='none')
-
-        self.window_size = window_size if not pad else window_size + (self.pooler.patch_size // 2) * 2
-        self.window_unfold = torch.nn.Unfold(self.window_size, stride=self.window_stride)
-        self.batch_reduction = get_reduction_fn(batch_reduction)
-        self.pad = pad
-
-    def forward(self, x, y):
-        c = x.shape[1]
-        x_bs = x.shape[0]
-        y_bs = y.shape[0]
-        if x_bs != y_bs:
-            if x_bs == 1:
-                x = x.repeat(y_bs, 1, 1, 1)
-                x_bs = y_bs
-            else:
-                y = y.repeat(x_bs, 1, 1, 1)
-                y_bs = x_bs
-        h, w = x.shape[2:]
-        p = torch.nn.ReflectionPad2d(self.pooler.patch_size // 2)
-        x = p(x)
-        y = p(y)
-
-        window_shape = (c, self.window_size, self.window_size)
-        x_uf = self.window_unfold(x).permute(dims=(0, 2, 1)).reshape(x_bs, -1, *window_shape)
-        y_uf = self.window_unfold(y).permute(dims=(0, 2, 1)).reshape(y_bs, -1, *window_shape)
-        L = x_uf.shape[1]
-        x_uf = x_uf.reshape(x_bs * L, *window_shape)
-        y_uf = y_uf.reshape(y_bs * L, *window_shape)
-        total_loss = self.pooler(x_uf, y_uf).view(x_bs, L).mean(dim=1)
-        return self.batch_reduction(total_loss)
-
-
-if __name__ == '__main__':
-    x = torch.ones(2, 3, 64, 64)
-    y = torch.zeros(2, 3, 64, 64)
-    loss = MMDExact()
-
-    print(loss(x, y))

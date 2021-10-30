@@ -5,9 +5,8 @@ from utils import save_image, get_file_name
 
 image_paths = []
 # dataset_dir = '/home/ariel/university/GPDM/GPDM/tests/downloaded_results/SIGD16_org'
-# image_paths += [os.path.join(dataset_dir, x) for x in os.listdir(dataset_dir)]
-
-dataset_dir = '/home/ariel/university/GPDM/GPDM/images/places50'
+# dataset_dir = '/home/ariel/university/GPDM/GPDM/images/places50'
+dataset_dir = '/home/ariel/university/GPDM/GPDM/images/HQ_16'
 image_paths += [os.path.join(dataset_dir, x) for x in os.listdir(dataset_dir)]
 
 

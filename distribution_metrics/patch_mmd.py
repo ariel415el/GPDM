@@ -6,9 +6,7 @@ from distribution_metrics.common import extract_patches
 
 def get_distance_matrix(X):
     XX = torch.matmul(X, X.t())
-
     X_norms = torch.sum(X ** 2, 1, keepdim=True)
-
     # exp[a,b] = (X[a] @ X[a])^2 -2(X[a] @ X[b]) + (X[b] @ X[b])^2 = || X[a] - X[b] ||^2
     return X_norms - 2 * XX + X_norms.t()
 
@@ -22,6 +20,7 @@ class kernel:
         :return: scalar
         """
         raise NotImplementedError
+
 
 class MultiBandWitdhRbfKernel(kernel):
     def __init__(self, sigmas=None):
@@ -151,6 +150,7 @@ class PatchMMD_RBF(PatchMMD):
         self.kernel = RbfKernel(sigma)
 
         super(PatchMMD_RBF, self).__init__(patch_size=patch_size, stride=stride, normalize_patch=normalize_patch, batch_reduction=batch_reduction)
+
 
 class PatchMMD_DotProd(PatchMMD):
     def __init__(self, patch_size=7, stride=1, batch_reduction='mean', normalize_patch='mean'):
