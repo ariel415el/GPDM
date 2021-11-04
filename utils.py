@@ -49,7 +49,7 @@ def aspect_ratio_resize(img, max_dim=256):
 
 def match_image_sizes(input, target):
     """resize and crop input image sot that it has the same aspect ratio as target"""
-    # assert(len(input.shape) == len(target.shape) == 4)
+    assert(len(input.shape) == len(target.shape) and len(target.shape) == 4)
     input_h, input_w = input.shape[-2:]
     target_h, target_w = target.shape[-2:]
     input_scale_factor = input_h / input_w
@@ -82,13 +82,21 @@ def downscale(img, pyr_factor):
     return transforms.Resize((new_y, new_x), antialias=True)(img)
 
 
-def get_pyramid(img, n_levels, pyr_factor):
+# def get_pyramid(img, n_levels, pyr_factor):
+#     res = [img]
+#     for i in range(n_levels):
+#         img = downscale(img, pyr_factor)
+#         res = [img] + res
+#     return res
+
+def get_pyramid(img, min_size, pyr_factor):
     res = [img]
-    for i in range(n_levels):
+    while True:
         img = downscale(img, pyr_factor)
+        if img.shape[-2] < min_size:
+            break
         res = [img] + res
     return res
-
 
 def quantize_image(img, N_colors):
     return np.round_(img*(N_colors/255))*(255/N_colors)

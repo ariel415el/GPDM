@@ -15,7 +15,7 @@ class logger:
     """Keeps track of the levels and steps of optimization. Logs it via TQDM"""
     def __init__(self, n_steps, n_lvls):
         self.n_steps = n_steps
-        self.n_lvls = n_lvls + 1
+        self.n_lvls = n_lvls
         self.lvl = -1
         self.lvl_step = 0
         self.steps = 0
@@ -41,7 +41,7 @@ class GPDM:
             scale_factor: Tuple[float, float] = (1., 1.),
             resize: int = None,
             pyr_factor: float = 0.7,
-            n_scales: int = 5,
+            coarse_dim: int = 32,
             lr: float = 0.05,
             num_steps: int = 500,
             init: str = 'noise',
@@ -52,7 +52,7 @@ class GPDM:
         :param scale_factor: scale of the output in relation to input
         :param resize: max size of input image dimensions
         :param pyr_factor: Downscale ratio of each pyramid level
-        :param n_scales: number of pyramid scale downs
+        :param coarse_dim: minimal height for pyramid level
         :param lr: optimization starting learning rate
         :param num_steps: number of optimization steps at each pyramid level
         :param init: Initialization mode ('noise' / 'target' / 'blured_target' / <image_path>)
@@ -62,7 +62,7 @@ class GPDM:
         self.scale_factor = scale_factor
         self.resize = resize
         self.pyr_factor = pyr_factor
-        self.n_scales = n_scales
+        self.coarse_dim = coarse_dim
         self.lr = lr
         self.num_steps = num_steps
         self.init = init
@@ -70,7 +70,7 @@ class GPDM:
         self.device = torch.device(device)
 
         init_name = 'img' if os.path.exists(self.init) else self.init
-        self.name = f'AR-{scale_factor}_R-{resize}_S-{pyr_factor}x{n_scales}_I-{init_name}+I(0,{noise_sigma})'
+        self.name = f'AR-{scale_factor}_R-{resize}_S-{pyr_factor}->{coarse_dim}_I-{init_name}+I(0,{noise_sigma})'
 
     def _get_target_pyramid(self, target_img_path):
         """Reads an image and create a pyraimd out of it. Ordered in increasing image size"""
@@ -78,7 +78,7 @@ class GPDM:
         if self.resize:
             target_img = aspect_ratio_resize(target_img, max_dim=self.resize)
         target_img = cv2pt(target_img)
-        target_pyramid = get_pyramid(target_img, self.n_scales, self.pyr_factor)
+        target_pyramid = get_pyramid(target_img, self.coarse_dim, self.pyr_factor)
         target_pyramid = [x.unsqueeze(0).to(self.device) for x in target_pyramid]
         return target_pyramid
 
@@ -123,7 +123,7 @@ class GPDM:
         for i in range(self.num_steps):
 
             # write optimization debut images
-            if debug_dir and i % 100 == 0 or i == self.num_steps -1:
+            if debug_dir and (i % 100 == 0 or i == self.num_steps -1):
                 save_image(self.synthesized_image,
                            os.path.join(debug_dir, 'optimization', f'lvl-{self.pbar.lvl}-{self.pbar.lvl_step}.png'))
                 plot_loss(losses, os.path.join(debug_dir, 'train_losses',f'lvl-{self.pbar.lvl}-train_loss.png'))
@@ -150,8 +150,8 @@ class GPDM:
         Run the GPDM model to generate an image with a similar patch distribution to target_img_path with a given criteria.
         This manages the coarse to fine optimization steps.
         """
-        self.pbar = logger(self.num_steps, self.n_scales)
         self.target_pyramid = self._get_target_pyramid(target_img_path)
+        self.pbar = logger(self.num_steps, len(self.target_pyramid))
         self.criteria = criteria.to(self.device)
         self.synthesized_image = self._get_initial_image()
         self.synthesized_image.requires_grad_(True)
@@ -165,7 +165,6 @@ class GPDM:
                     self.synthesized_image.requires_grad_(True)
 
             self.match_patch_distributions(lvl_target_img, debug_dir)
-
             if debug_dir:
                 save_image(lvl_target_img, os.path.join(debug_dir, f'target-lvl-{self.pbar.lvl}.png'))
                 save_image(self.synthesized_image, os.path.join(debug_dir, f'output-lvl-{self.pbar.lvl}.png'))

@@ -2,3 +2,4 @@ __pycache__/
 /scripts/outputs
 /images
 /.idea
+/tests

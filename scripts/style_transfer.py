@@ -26,26 +26,30 @@ def get_matching_content_img(target_img_path, content_img_path, resize):
     target_img = cv2pt(target_img)
 
     content_img = cv2pt(cv2.imread(content_img_path))
-    content_img = match_image_sizes(content_img, target_img)
+    content_img = match_image_sizes(content_img.unsqueeze(0), target_img.unsqueeze(0))
 
     return content_img
+
 
 def main():
     """
     Smaller patch size adds variablility but may ruin large objects
     """
     # resize = 500; p=11
-    resize = 256; p=7
+    # resize = 500; p=15; lr=0.1;num_steps=500; content_weight=0.01
+    resize = 256; p=11; lr=0.05;num_steps=500; content_weight=0
     for content_image_path, style_image_path in input_and_target_images:
-        # criteria = LossesList([
-        #     distribution_metrics.PatchSWDLoss(patch_size=11, stride=1, num_proj=256, normalize_patch='none'),
-        #     GrayLevelLoss(get_matching_content_img(style_image_path, content_image_path, resize), resize=64)
-        # ], weights=[1,1])
-        criteria = distribution_metrics.PatchSWDLoss(patch_size=p, stride=1, num_proj=256, normalize_patch='none')
+        criteria = LossesList([
+            # distribution_metrics.PatchSWDLoss(patch_size=p, stride=1, num_proj=256),
+            distribution_metrics.OLDPatchSWDLoss(patch_size=p, stride=1, num_proj=256, normalize_patch='mean'),
+            # distribution_metrics.PatchCoherentLoss(patch_size=11, stride=3, mode='detached'),
+            GrayLevelLoss(get_matching_content_img(style_image_path, content_image_path, resize), resize=128)
+        ], weights=[1, content_weight])
+        # criteria = distribution_metrics.PatchSWDLoss(patch_size=p, stride=1, num_proj=256)
 
         run_name = f'{get_file_name(content_image_path)}-to-{get_file_name(style_image_path)}'
 
-        model = GPDM(n_scales=0, lr=0.05, num_steps=500, init=content_image_path, noise_sigma=0, resize=resize)
+        model = GPDM(coarse_dim=resize, lr=lr, num_steps=num_steps, init=content_image_path, noise_sigma=0, resize=resize)
         outputs_dir = f'outputs/style_transfer/{criteria.name}_{model.name}'
 
         debug_dir = f'{outputs_dir}/{run_name}'
