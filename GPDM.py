@@ -47,6 +47,7 @@ class GPDM:
             init: str = 'noise',
             noise_sigma: float = 0.75,
             device: str = 'cuda:0',
+            decay_steps=250,
     ):
         """
         :param scale_factor: scale of the output in relation to input
@@ -58,6 +59,7 @@ class GPDM:
         :param init: Initialization mode ('noise' / 'target' / 'blured_target' / <image_path>)
         :param noise_sigma: standard deviation of the zero mean normal noise added to the initialization
         :param device: cuda/cpu
+        :param decay_steps: frequency of 0.9 decay of the learning rate
         """
         self.scale_factor = scale_factor
         self.resize = resize
@@ -68,6 +70,7 @@ class GPDM:
         self.init = init
         self.noise_sigma = noise_sigma
         self.device = torch.device(device)
+        self.decay_steps = decay_steps
 
         init_name = 'img' if os.path.exists(self.init) else self.init
         self.name = f'AR-{scale_factor}_R-{resize}_S-{pyr_factor}->{coarse_dim}_I-{init_name}+I(0,{noise_sigma})'
@@ -139,7 +142,7 @@ class GPDM:
             self.pbar.step()
             self.pbar.print()
 
-            if i != 0 and i % 100 == 0:
+            if i != 0 and i % self.decay_steps == 0:
                 for g in optim.param_groups:
                     g['lr'] *= 0.9
 
@@ -171,4 +174,3 @@ class GPDM:
 
         self.pbar.pbar.close()
         return self.synthesized_image.detach()[0]
-

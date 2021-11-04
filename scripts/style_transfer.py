@@ -24,7 +24,6 @@ def get_matching_content_img(target_img_path, content_img_path, resize):
     target_img = cv2.imread(target_img_path)
     target_img = aspect_ratio_resize(target_img, max_dim=resize)
     target_img = cv2pt(target_img)
-
     content_img = cv2pt(cv2.imread(content_img_path))
     content_img = match_image_sizes(content_img.unsqueeze(0), target_img.unsqueeze(0))
 
@@ -35,17 +34,13 @@ def main():
     """
     Smaller patch size adds variablility but may ruin large objects
     """
-    # resize = 500; p=11
-    # resize = 500; p=15; lr=0.1;num_steps=500; content_weight=0.01
-    resize = 256; p=11; lr=0.05;num_steps=500; content_weight=0
+    # resize = 256; p=7; lr=0.1;num_steps=500; content_weight=0.01
+    resize = 512; p=11; lr=0.035;num_steps=250; content_weight=0
     for content_image_path, style_image_path in input_and_target_images:
         criteria = LossesList([
-            # distribution_metrics.PatchSWDLoss(patch_size=p, stride=1, num_proj=256),
-            distribution_metrics.OLDPatchSWDLoss(patch_size=p, stride=1, num_proj=256, normalize_patch='mean'),
-            # distribution_metrics.PatchCoherentLoss(patch_size=11, stride=3, mode='detached'),
+            distribution_metrics.PatchSWDLoss(patch_size=p, stride=1, num_proj=256),
             GrayLevelLoss(get_matching_content_img(style_image_path, content_image_path, resize), resize=128)
         ], weights=[1, content_weight])
-        # criteria = distribution_metrics.PatchSWDLoss(patch_size=p, stride=1, num_proj=256)
 
         run_name = f'{get_file_name(content_image_path)}-to-{get_file_name(style_image_path)}'
 
