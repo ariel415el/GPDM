@@ -29,8 +29,8 @@ class PatchSWDLoss(torch.nn.Module):
         projx, _ = torch.sort(projx, dim=1)
         projy, _ = torch.sort(projy, dim=1)
 
-        loss = ((projx - projy) ** 2).mean()
-        # loss = torch.abs(projx - projy).mean()
+        # loss = ((projx - projy) ** 2).mean()
+        loss = torch.abs(projx - projy).mean()
 
         return loss
 

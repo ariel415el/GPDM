@@ -15,8 +15,8 @@ def compute_swd(x, y, num_proj=256):
     proj1, _ = torch.sort(proj1, dim=0)
     proj2, _ = torch.sort(proj2, dim=0)
 
-    # d = torch.abs(proj1 - proj2)
-    d = ((proj1 - proj2)**2).mean()
+    d = torch.abs(proj1 - proj2)
+    # d = ((proj1 - proj2)**2).mean()
     return torch.mean(d)
 
 
