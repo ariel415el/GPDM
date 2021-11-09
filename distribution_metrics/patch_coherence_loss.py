@@ -1,7 +1,7 @@
 from random import randint
 
 import torch
-from distribution_metrics.common import extract_patches
+from distribution_metrics.experimental_losses.common import extract_patches
 
 
 def efficient_compute_distances(x, y):

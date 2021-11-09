@@ -63,7 +63,7 @@ def match_image_sizes(input, target):
     else:
         input = transforms.Resize((int(input_h/input_w*target_w), target_w), antialias=True)(input)
         pixels_to_cut = input.shape[-2] - target_h
-        if pixels_to_cut > 0:
+        if pixels_to_cut > 1:
             input = input[:, :, int(pixels_to_cut / 2):-int(pixels_to_cut / 2)]
 
     input = transforms.Resize(target.shape[-2:], antialias=True)(input)

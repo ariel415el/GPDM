@@ -2,7 +2,7 @@ import os
 
 import distribution_metrics
 from GPDM import GPDM
-from utils import get_file_name, save_image
+from utils import save_image, get_file_name
 
 input_and_target_images = [
     ('../images/resampling/balls.jpg', '../images/edit_inputs/balls_green_and_black.jpg'),
@@ -23,17 +23,15 @@ def main():
     """
     Smaller patch size adds variablility but may ruin large objects
     """
-    # criteria = distribution_metrics.PatchSWDLoss(patch_size=11, stride=1, num_proj=16, normalize_patch='none')
-    # criteria = distribution_metrics.PatchSCD(patch_size=7, stride=1, num_proj=1)
-    criteria = distribution_metrics.PatchCoherentLoss(patch_size=7, stride=3, mode='detached')
-    # criteria = distribution_metrics.PatchMMD_RBF(patch_size=11, stride=1, sigma=0.02, normalize_patch='mean')
+    criteria = distribution_metrics.PatchSWDLoss(patch_size=11, stride=1, num_proj=256)
+    # criteria = distribution_metrics.PatchCoherentLoss(patch_size=7, stride=3, mode='detached')
     for (target_image_path, input_image_path) in input_and_target_images:
-            model = GPDM(coarse_dim=64, pyr_factor=0.5, lr=0.03, num_steps=250, init=input_image_path, noise_sigma=0)
+            model = GPDM(coarse_dim=64, pyr_factor=0.85, lr=0.03, num_steps=250, init=input_image_path, noise_sigma=0)
             fname, ext = os.path.splitext(os.path.basename(input_image_path))[:2]
 
-            # debug_dir = f'outputs/image_editing/{get_file_name(input_image_path)}-to-{get_file_name(target_image_path)}/{criteria.name}_{model.name}'
-            # result = model.run(target_image_path, criteria, debug_dir)
-            result = model.run(target_image_path, criteria, None)
+            debug_dir = f'outputs/image_editing/{get_file_name(input_image_path)}-to-{get_file_name(target_image_path)}/{criteria.name}_{model.name}'
+            result = model.run(target_image_path, criteria, debug_dir)
+            # result = model.run(target_image_path, criteria, None)
 
             save_image(result, f'outputs/image_editing/generated_images/{fname}${0}{ext}')
 

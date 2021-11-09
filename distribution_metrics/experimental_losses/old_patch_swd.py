@@ -1,5 +1,5 @@
 import torch
-from distribution_metrics.common import extract_patches
+from distribution_metrics.experimental_losses.common import extract_patches
 
 
 def compute_swd(x, y, num_proj=256):

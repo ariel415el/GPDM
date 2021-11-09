@@ -1,5 +1,5 @@
 import torch
-from distribution_metrics.common import extract_patches
+from distribution_metrics.experimental_losses.common import extract_patches
 import torch.nn.functional as F
 
 def compute_coherence_1d_distance(input, target):

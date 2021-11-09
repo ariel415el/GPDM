@@ -32,11 +32,11 @@ def main():
                 model = GPDM(coarse_dim=32, pyr_factor=0.75, scale_factor=scale_factor, lr=0.02, num_steps=500, init='blured_target', noise_sigma=1.5, resize=256)
                 # model = GPDM(pyr_factor=0.85, n_scales=13, scale_factor=scale_factor, lr=0.05, num_steps=150, init='blured_target', noise_sigma=1.5)
 
-                debug_dir = f'outputs/retarget_images/debug_images/{get_file_name(input_image_path)}/{criteria.name}_{model.name}'
+                debug_dir = f'outputs_old/retarget_images/debug_images/{get_file_name(input_image_path)}/{criteria.name}_{model.name}'
 
                 result = model.run(input_image_path, criteria, debug_dir)
 
                 fname, ext = os.path.splitext(os.path.basename(input_image_path))[:2]
-                save_image(result, f'outputs/retarget_images/generated_images/{fname}_{scale_factor}${i}{ext}')
+                save_image(result, f'outputs_old/retarget_images/generated_images/{fname}_{scale_factor}${i}{ext}')
 if __name__ == '__main__':
     main()

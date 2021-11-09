@@ -14,11 +14,11 @@ def main():
     """
     Smaller patch size adds variablility but may ruin large objects
     """
-    criteria = distribution_metrics.PatchSWDLoss(patch_size=7, stride=1, num_proj=128)
-    model = GPDM(pyr_factor=0.85, coarse_dim=28, lr=0.05, num_steps=150, init='noise', noise_sigma=1.5)
-    output_dir = f'outputs/resampling_dataset/{os.path.basename(dataset_dir)}_{criteria.name}_{model.name}'
-    for input_image_path in image_paths:
-        for i in range(1):
+    criteria = distribution_metrics.PatchSWDLoss(patch_size=7, stride=1, num_proj=256)
+    model = GPDM(pyr_factor=0.85, coarse_dim=32, lr=0.05, num_steps=250, init='noise', noise_sigma=1.5)
+    output_dir = f'outputs_old/resampling_dataset/{os.path.basename(dataset_dir)}_{criteria.name}_{model.name}'
+    for input_image_path in image_paths[:6]:
+        for i in range(5):
             fname, ext = os.path.splitext(os.path.basename(input_image_path))[:2]
 
             debug_dir = f'{output_dir}/optimization/{fname}-{i}'
