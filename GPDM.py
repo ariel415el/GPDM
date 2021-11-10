@@ -73,7 +73,7 @@ class GPDM:
         self.decay_steps = decay_steps
 
         init_name = 'img' if os.path.exists(self.init) else self.init
-        self.name = f'AR-{scale_factor}_R-{resize}_S-{pyr_factor}->{coarse_dim}_I-{init_name}+I(0,{noise_sigma})'
+        self.name = f'R-{resize}_S-{pyr_factor}->{coarse_dim}_I-{init_name}+I(0,{noise_sigma})'
 
     def _get_target_pyramid(self, target_img_path):
         """Reads an image and create a pyraimd out of it. Ordered in increasing image size"""
@@ -115,18 +115,18 @@ class GPDM:
 
         return initial_iamge
 
-    def match_patch_distributions(self, target_img, debug_dir):
+    def match_patch_distributions(self, target_img, debug_dir, num_steps):
         """
-        Minimizes self.criteria(self.synthesized_image, target_img) for self.num_steps SGD steps
+        Minimizes self.criteria(self.synthesized_image, target_img) for num_steps SGD steps
         :param target_img: tensor of shape (1, C, H, W)
         :param debug_dir:
         """
         optim = torch.optim.Adam([self.synthesized_image], lr=self.lr)
         losses = []
-        for i in range(self.num_steps):
+        for i in range(num_steps):
 
             # write optimization debut images
-            if debug_dir and (i % 100 == 0 or i == self.num_steps -1):
+            if debug_dir and (i % 100 == 0 or i == num_steps -1):
                 save_image(self.synthesized_image,
                            os.path.join(debug_dir, 'optimization', f'lvl-{self.pbar.lvl}-{self.pbar.lvl_step}.png'))
                 plot_loss(losses, os.path.join(debug_dir, 'train_losses',f'lvl-{self.pbar.lvl}-train_loss.png'))
@@ -145,6 +145,7 @@ class GPDM:
             if i != 0 and i % self.decay_steps == 0:
                 for g in optim.param_groups:
                     g['lr'] *= 0.9
+                    self.lr *= 0.9
 
         self.synthesized_image = torch.clip(self.synthesized_image, -1, 1)
 
@@ -167,7 +168,7 @@ class GPDM:
                     self.synthesized_image = transforms.Resize((h, w), antialias=True)(self.synthesized_image)
                     self.synthesized_image.requires_grad_(True)
 
-            self.match_patch_distributions(lvl_target_img, debug_dir)
+            self.match_patch_distributions(lvl_target_img, debug_dir, self.num_steps)
             if debug_dir:
                 save_image(lvl_target_img, os.path.join(debug_dir, f'target-lvl-{self.pbar.lvl}.png'))
                 save_image(self.synthesized_image, os.path.join(debug_dir, f'output-lvl-{self.pbar.lvl}.png'))
