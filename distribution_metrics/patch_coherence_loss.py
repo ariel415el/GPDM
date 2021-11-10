@@ -40,7 +40,7 @@ def compute_patch_coherence(input_patches, target_patches, mode='detached'):
 
 class PatchCoherentLoss(torch.nn.Module):
     """For each patch in input image x find its NN in target y and sum the their distances"""
-    def __init__(self, patch_size=7, stride=1, mode='l2', batch_reduction='mean'):
+    def __init__(self, patch_size=7, stride=1, mode='detached', batch_reduction='mean'):
         super(PatchCoherentLoss, self).__init__()
         self.name = f"PatchCoheren(p-{patch_size}:{stride}_M-{mode})"
         self.patch_size = patch_size

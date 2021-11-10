@@ -19,12 +19,21 @@ class PatchSWDLoss(torch.nn.Module):
         projx = F.conv2d(x, rand).reshape(self.num_proj, -1)
         projy = F.conv2d(y, rand).reshape(self.num_proj, -1)
 
+        # while projx.shape[1] > projy.shape[1]:
+
         if projx.shape[1] > projy.shape[1]:
-            indices = torch.randperm(projx.shape[1])[:projy.shape[1]]
-            projx = projx[:, indices]
+            d = projx.shape[1] // projy.shape[1]
+            projy = torch.cat([projy] * d, dim=1)
+            if projx.shape[1] > projy.shape[1]:
+                indices = torch.randperm(projy.shape[1])[:projx.shape[1] - projy.shape[1]]
+                projy = torch.cat([projy, projy[:, indices]], dim=1)
+
         elif projx.shape[1] < projy.shape[1]:
-            indices = torch.randperm(projy.shape[1])[:projx.shape[1]]
-            projy = projy[:, indices]
+            d = projy.shape[1] // projx.shape[1]
+            projx = torch.cat([projx] * d, dim=1)
+            if projx.shape[1] < projy.shape[1]:
+                indices = torch.randperm(projx.shape[1])[:projy.shape[1] - projx.shape[1]]
+                projy = torch.cat([projx, projx[:, indices]], dim=1)
 
         projx, _ = torch.sort(projx, dim=1)
         projy, _ = torch.sort(projy, dim=1)
