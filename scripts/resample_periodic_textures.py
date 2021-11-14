@@ -7,13 +7,13 @@ from GPDM import GPDM
 from utils import save_image
 
 image_paths = [
-        '../images/textures/olives.png',
-        '../images/textures/tomatos.png',
-        '../images/textures/green_waves.jpg',
-        '../images/textures/cobbles.jpeg',
-        '../images/style_transfer/style/brick.jpg',
-        '../images/style_transfer/style/mondrian.jpg',
-        '../images/style_transfer/style/rug.jpeg',
+        'images/textures/olives.png',
+        'images/textures/tomatos.png',
+        'images/textures/green_waves.jpg',
+        'images/textures/cobbles.jpeg',
+        'images/style_transfer/style/brick.jpg',
+        'images/style_transfer/style/mondrian.jpg',
+        'images/style_transfer/style/rug.jpeg',
 
     ]
 
@@ -23,7 +23,7 @@ def main():
         model = GPDM(pyr_factor=0.75, coarse_dim=32, resize=256, scale_factor=(2, 2), lr=0.03, num_steps=200, init='noise', noise_sigma=1.5, decay_steps=100)
         output_dir = f'outputs/periodic_textures/{criteria.name}_{model.name}'
         fname, ext = os.path.splitext(os.path.basename(input_image_path))[:2]
-        debug_dir = f'{output_dir}/debug/{fname}'
+        debug_dir = f'{output_dir}/debug_images/{fname}'
         result = model.run(input_image_path, criteria, debug_dir)
 
         save_image(result, f'{output_dir}/generated_images/{fname}{ext}')

@@ -25,6 +25,7 @@ def main():
     """
     Smaller patch size adds variablility but may ruin large objects
     """
+    outputs_dir = 'outputs/retarget/'
     criteria = distribution_metrics.PatchSWDLoss(patch_size=7, stride=1, num_proj=256)
     for input_image_path in images:
         for scale_factor in [(2,0.5), (1,1.5), (1,2.5), (1,0.5)]:
@@ -32,10 +33,10 @@ def main():
                 model = GPDM(resize=256, coarse_dim=21, pyr_factor=0.85, scale_factor=scale_factor, lr=0.05, num_steps=150, decay_steps=150, init='target', noise_sigma=1.5)
 
                 fname, ext = os.path.splitext(os.path.basename(input_image_path))[:2]
-                debug_dir = f'outputs/retarget_images/{criteria.name}_{model.name}/debug_images/{fname}-{scale_factor}'
+                debug_dir = f'{outputs_dir}/{criteria.name}_{model.name}/debug_images/{fname}-{scale_factor}'
 
                 result = model.run(input_image_path, criteria, debug_dir)
 
-                save_image(result, f'outputs/retarget_images/{criteria.name}_{model.name}/generated_images/{fname}_{scale_factor}${i}{ext}')
+                save_image(result, f'{outputs_dir}/{criteria.name}_{model.name}/generated_images/{fname}_{scale_factor}${i}{ext}')
 if __name__ == '__main__':
     main()

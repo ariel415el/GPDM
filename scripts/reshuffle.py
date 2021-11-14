@@ -20,12 +20,12 @@ def main():
     """
     criteria = distribution_metrics.PatchSWDLoss(patch_size=7, stride=1, num_proj=512)
     model = GPDM(pyr_factor=0.85, coarse_dim=28, lr=0.05, num_steps=150, init='noise', noise_sigma=1.5, resize=0)
-    output_dir = f'outputs/resampling_dataset/{os.path.basename(dataset_dir)}_{criteria.name}_{model.name}'
+    output_dir = f'outputs/reshuffle/{os.path.basename(dataset_dir)}_{criteria.name}_{model.name}'
     for input_image_path in image_paths:
         for i in range(5):
             fname, ext = os.path.splitext(os.path.basename(input_image_path))[:2]
 
-            debug_dir = f'{output_dir}/optimization/{fname}-{i}'
+            debug_dir = f'{output_dir}/debug_images/{fname}-{i}'
 
             result = model.run(input_image_path, criteria, debug_dir)
 
