@@ -33,7 +33,7 @@ class PatchSWDLoss(torch.nn.Module):
             projx = torch.cat([projx] * d, dim=1)
             if projx.shape[1] < projy.shape[1]:
                 indices = torch.randperm(projx.shape[1])[:projy.shape[1] - projx.shape[1]]
-                projy = torch.cat([projx, projx[:, indices]], dim=1)
+                projx = torch.cat([projx, projx[:, indices]], dim=1)
 
         projx, _ = torch.sort(projx, dim=1)
         projy, _ = torch.sort(projy, dim=1)

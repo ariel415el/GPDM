@@ -65,7 +65,7 @@ class GPDM:
         self.resize = resize
         self.pyr_factor = pyr_factor
         self.coarse_dim = coarse_dim
-        self.lr = lr
+        self.starting_lr = self.lr = lr
         self.num_steps = num_steps
         self.init = init
         self.noise_sigma = noise_sigma
@@ -159,6 +159,7 @@ class GPDM:
         self.criteria = criteria.to(self.device)
         self.synthesized_image = self._get_initial_image()
         self.synthesized_image.requires_grad_(True)
+        self.lr = self.starting_lr
 
         for lvl, lvl_target_img in enumerate(self.target_pyramid):
             self.pbar.new_lvl()

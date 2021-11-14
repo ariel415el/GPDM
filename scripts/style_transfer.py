@@ -1,4 +1,6 @@
-from torchvision.transforms import transforms
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import distribution_metrics
 from GPDM import GPDM
@@ -17,7 +19,7 @@ input_and_target_images = [
     (f'{CONTENT_DIR}/hotel_bedroom2.jpg', f'{STYLE_DIR}/Muse.jpg'),
     (f'{CONTENT_DIR}/cat1.jpg', f'{STYLE_DIR}/olive_Trees.jpg'),
     (f'{CONTENT_DIR}/cornell.jpg', f'{STYLE_DIR}/rug.jpeg'),
-    (f'{CONTENT_DIR}/man1.jpg', f'{STYLE_DIR}/drawing.jpeg'),
+    (f'{CONTENT_DIR}/man1.jpg', f'{STYLE_DIR}/drawing.jpg'),
     (f'{CONTENT_DIR}/cornell.jpg', f'{STYLE_DIR}/rug.jpeg'),
     ('../images/analogies/duck_mosaic.jpg', '../images/analogies/S_char.jpg'),
     ('../images/analogies/S_char.jpg', '../images/analogies/duck_mosaic.jpg'),
@@ -41,7 +43,7 @@ def main():
     """
     Smaller patch size adds variablility but may ruin large objects
     """
-    # resize = 256; p=7; lr=0.1;num_steps=500; content_weight=0.01
+    # resize = 256; p=7; lr=0.1;num_steps=500; content_weight=0.1
     resize=512; p=11; lr=0.035;num_steps=500; content_weight=0
     for content_image_path, style_image_path in input_and_target_images:
         criteria = LossesList([

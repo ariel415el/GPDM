@@ -1,7 +1,10 @@
+import sys
 import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import distribution_metrics
 from GPDM import GPDM
-from utils import save_image, LossesList
+from utils import save_image
 
 image_paths = []
 dataset_dir = '/home/ariel/university/GPDM/GPDM/images/HQ_16'
