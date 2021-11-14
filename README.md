@@ -7,28 +7,27 @@ Original Pytorch implementation of the GPDM model introduced in "Generating natu
 `
 python3 scripts/reshuffle_datasets.py
 `
+
 I added the Places50 and SIGD16 datasets from Drop-The-Gan and SinGAN so that results can be reproduced
 
 # Retargeting
 `
 python3 scripts/retarget_images.py
 `
-Apart from the datasets from the paper I collected some interesting retargeting images in the images folder
 
-[comment]: <> (<img src="Readme_images/Retargeting.png" width="200"/> <img src="Readme_images/Retargeting_H.png" width="200"/> )
+Apart from the datasets from the paper I collected 
+some interesting retargeting images in the images folder
 
-[comment]: <> (<p align="right">)
-[comment]: <> (  <img src="Readme_images/Retargeting.png" width="100" />)
-[comment]: <> (  <img src="Readme_images/Retargeting_H.png" width="100" /> )
-[comment]: <> (</p>)
+<img src="Readme_images/Retargeting.png" height="400"/> <img src="Readme_images/Retargeting_H.png" height="400"/>
 
+<!-- ![Teaser](Readme_images/Retargeting.png) ![Teaser](Readme_images/Retargeting_H.png) -->
 
-![Teaser](Readme_images/Retargeting.png) ![Teaser](Readme_images/Retargeting_H.png)
-
-# Retargeting
+# Style transfer
 `
 python3 scripts/style_transfer.py
 `
+
 In the images folder you can find images I collected from various repos and papers cited in my paper.
+
 ![Teaser](Readme_images/Style_Transfer.png)
 
