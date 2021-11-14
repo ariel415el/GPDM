@@ -4,3 +4,5 @@ __pycache__/
 /.idea
 /tests
 /unused_images
+/fast_style_transfer
+/outputs
