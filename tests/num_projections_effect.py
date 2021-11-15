@@ -15,7 +15,8 @@ def main(dataset_dir):
     image_paths = [os.path.join(dataset_dir, x) for x in os.listdir(dataset_dir)]
     file_extension = image_paths[0].split(".")[-1]
 
-    output_dir = os.path.join(f'outputs','reshuffle_num-projs')
+    output_dir = os.path.join(f'outputs','num_projections_effect')
+    os.makedirs(output_dir, exist_ok=True)
     f = open(os.path.join(output_dir, 'results.txt'), 'w+')
 
     num_steps = 300
@@ -24,7 +25,7 @@ def main(dataset_dir):
         model = GPDM(pyr_factor=0.85, coarse_dim=28, lr=0.05, num_steps=num_steps, init='noise', noise_sigma=1.5, resize=0)
         sfid_scores = []
         generated_dirs = []
-        for i in range(2):
+        for i in range(3):
             generation_dir = os.path.join(output_dir, f'generated_images_p-{num_proj}_{i}')
             generated_dirs.append(generation_dir)
             for input_image_path in image_paths:
@@ -32,7 +33,7 @@ def main(dataset_dir):
                 save_image(result, os.path.join(generation_dir, os.path.basename(input_image_path)))
 
             sfid = np.asarray(calculate_sifid_given_paths(dataset_dir, generation_dir, 1, False, 64, file_extension)).mean()
-            sfid_scores[num_proj].append(sfid)
+            sfid_scores.append(sfid)
 
         diversity = compute_images_diversity(generated_dirs, dataset_dir)
         f.write(f"{num_proj}: SFID={np.mean(sfid_scores)}, Diversity={diversity}\n")

@@ -9,9 +9,9 @@ def duplicate_to_match_lengths(arr1, arr2):
     :param arr2: (r, m) torch tensor
     :return: (r,max(n,m)) torch tensor
     """
-    if len(arr1) == len(arr2):
+    if arr1.shape[1] == arr2.shape[1]:
         return arr1, arr2
-    elif len(arr1) < len(arr2):
+    elif arr1.shape[1] < arr2.shape[1]:
         tmp = arr1
         arr1 = arr2
         arr2 = tmp

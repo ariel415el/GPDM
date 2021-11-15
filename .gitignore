@@ -1,7 +1,7 @@
 __pycache__/
 /scripts/outputs
 /.idea
-/tests
+/tests/downloaded_results
 /unused_images
 /fast_style_transfer
 /outputs
