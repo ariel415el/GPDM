@@ -1,7 +1,8 @@
 from random import randint
 
 import torch
-from distribution_metrics.experimental_losses.common import extract_patches
+
+from distribution_metrics.patch_swd import extract_patches
 
 
 def efficient_compute_distances(x, y):
@@ -57,8 +58,8 @@ class PatchCoherentLoss(torch.nn.Module):
             x = x[:, :, rows_offset:, cols_offset:]
             y = y[:, :, rows_offset:, cols_offset:]
 
-        x_patches = extract_patches(x, self.patch_size, self.stride, 'none')
-        y_patches = extract_patches(y, self.patch_size, self.stride, 'none')
+        x_patches = extract_patches(x, self.patch_size, self.stride)
+        y_patches = extract_patches(y, self.patch_size, self.stride)
 
         results = []
         for i in range(b):

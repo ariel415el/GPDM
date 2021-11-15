@@ -1,6 +1,2 @@
 from distribution_metrics.patch_swd import PatchSWDLoss
 from distribution_metrics.patch_coherence_loss import PatchCoherentLoss
-from distribution_metrics.experimental_losses.approximate_patch_mmd import MMDApproximate
-from distribution_metrics.experimental_losses.old_patch_swd import OLDPatchSWDLoss
-from distribution_metrics.experimental_losses.sliced_coherence_loss import PatchSCD
-
