@@ -9,9 +9,9 @@ from utils import save_image, get_file_name
 input_and_target_images = [
     ('images/edit_inputs/tree.png', 'images/edit_inputs/tree_edit.png', 128),
     ('images/SIGD16/7.jpg', 'images/edit_inputs/balls_edit.jpg', 128),
-    # ('images/SIGD16/4.jpg', 'images/edit_inputs/birds_dusk_edit.jpg', 128),
+    ('images/SIGD16/4.jpg', 'images/edit_inputs/birds_dusk_edit.jpg', 128),
     ('images/Places50/15.jpg', 'images/edit_inputs/stone_edit.png', 256),
-    # ('images/edit_inputs/swiming.jpg', 'images/edit_inputs/swiming_edit.jpg', 128),
+    ('images/edit_inputs/swiming.jpg', 'images/edit_inputs/swiming_edit.jpg', 128),
     ('images/retargeting/teo.jpg', 'images/edit_inputs/teo_edit.jpg', 64),
 ]
 
