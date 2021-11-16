@@ -1,5 +1,5 @@
 # GPDM
-Original Pytorch implementation of the GPDM model introduced in "Generating natural images with direct patch distributions matching"
+Original Pytorch implementation of the GPDM model introduced in "Generating Natural Images with Efficient Patch Distribution Matching"
 
 ![Teaser](Readme_images/Teaser_Figure.png)
 
