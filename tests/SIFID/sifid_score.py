@@ -215,17 +215,22 @@ def calculate_sifid_given_paths(path1, path2, batch_size, cuda, dims, suffix):
 
 if __name__ == '__main__':
     np.set_printoptions(suppress=True)
-    # reference_dir = '/home/ariel/university/GPDM/tests/downloaded_results/Places50_org'
+    # reference_dir = '/home/ariel/university/GPDM/tests/downloaded_results/jpeg_100/Places50_org'
     # fake_dirs = [
+    #     '/home/ariel/university/GPDM/images/Places50',
+    #     '/home/ariel/university/GPDM/outputs/reshuffle_table_#Coarse-28_#Projs-64_#Steps-300_#Reps-3/Places50_org/generated_images_0',
+    #     '/home/ariel/university/GPDM/outputs/reshuffle_table_#Coarse-28_#Projs-64_#Steps-300_#Reps-3/Places50_org/generated_images_1',
+    #     '/home/ariel/university/GPDM/outputs/reshuffle_table_#Coarse-28_#Projs-64_#Steps-300_#Reps-3/Places50_org/generated_images_1',
     #     '/home/ariel/university/GPDM/images_for_paper_table/Places50_ours_high_var',
-    #     '/home/ariel/university/GPDM/tests/downloaded_results/Places50_GPNN_high_var',
-    #     '/home/ariel/university/GPDM/tests/downloaded_results/Places50_GPNN_mid_var',
-    #     '/home/ariel/university/GPDM/tests/downloaded_results/Places50_SINGAN_high_var',
-    #     '/home/ariel/university/GPDM/tests/downloaded_results/Places50_SINGAN_mid_var',
+    #     '/home/ariel/university/GPDM/tests/downloaded_results/jpeg_100/Places50_GPNN_high_var',
+    #     '/home/ariel/university/GPDM/tests/downloaded_results/jpeg_100/Places50_GPNN_mid_var',
+    #     '/home/ariel/university/GPDM/tests/downloaded_results/jpeg_100/Places50_SINGAN_high_var',
+    #     '/home/ariel/university/GPDM/tests/downloaded_results/jpeg_100/Places50_SINGAN_mid_var',
     #     ]
-    reference_dir = '/home/ariel/university/GPDM/tests/downloaded_results/jpeg_100/SIGD16_org'
+    # reference_dir = '/home/ariel/university/GPDM/tests/downloaded_results/jpeg_100/SIGD16_org'
+    reference_dir = '/home/ariel/university/GPDM/images/SIGD16'
     fake_dirs = [
-        '/home/ariel/university/GPDM/scripts/outputs/reshuffle/SIGD16_org_ConvSWDLoss(p-7:1)_R-0_S-0.85->28_I-noise+I(0,1.5)/generated_images',
+        '/home/ariel/university/GPDM/images_for_paper_table/SIGD16_ours_high_var',
         '/home/ariel/university/GPDM/tests/downloaded_results/jpeg_100/SIGD16_ours_high_var',
         '/home/ariel/university/GPDM/tests/downloaded_results/jpeg_100/SIGD16_GPNN',
         '/home/ariel/university/GPDM/tests/downloaded_results/jpeg_100/SIGD16_SINGAN',
@@ -238,7 +243,6 @@ if __name__ == '__main__':
     for fake_dir in fake_dirs:
 
         sifid_values = calculate_sifid_given_paths(reference_dir, fake_dir, 1, False, 64, suffix)
-
         sifid_values = np.asarray(sifid_values,dtype=np.float32)
 
         print(f"{os.path.basename(fake_dir)} - SIFID: {sifid_values.mean():.7f}")
