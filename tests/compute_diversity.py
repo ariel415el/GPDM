@@ -10,7 +10,7 @@ def read_image_as_grayscale(path):
     return cv2.cvtColor(ref, cv2.COLOR_BGR2GRAY)
 
 
-def compute_images_diversity(image_dirs, ref_dir):
+def compute_images_diversity(ref_dir, image_dirs):
     """To quantify the diversity of the generated images,
         for each training example we calculated the standard devia-
         tion (std) of the intensity values of each pixel over 100 gen-

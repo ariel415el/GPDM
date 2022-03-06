@@ -33,6 +33,7 @@ from matplotlib.pyplot import imread
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from inception import InceptionV3
 
+
 def get_activations(files, model, batch_size=1, dims=64,
                     cuda=False, verbose=False):
     """Calculates the activations of the pool_3 layer for all images.
@@ -186,7 +187,7 @@ def calculate_activation_statistics(files, model, batch_size=1,
     return mu, sigma
 
 
-def calculate_sifid_given_paths(path1, path2, batch_size, cuda, dims, suffix):
+def calculate_sifid_given_paths(path1, path2, batch_size, cuda, dims):
     """Calculates the SIFID of two paths"""
 
     block_idx = InceptionV3.BLOCK_INDEX_BY_DIM[dims]
@@ -195,54 +196,14 @@ def calculate_sifid_given_paths(path1, path2, batch_size, cuda, dims, suffix):
     if cuda:
         model.cuda()
 
-    path1 = pathlib.Path(path1)
-    files1 = list(path1.glob('*.%s' %suffix))
-    # files1 = sorted(list(path1.glob('*.%s' %suffix)), key=lambda x : int(os.path.splitext(os.path.basename(x))[0]))
+    fnames = os.listdir(path1)
 
-    path2 = pathlib.Path(path2)
-    files2 = list(path2.glob('*.%s' %suffix))
-    # files2 = sorted(list(path2.glob('*.%s' %suffix)), key=lambda x : int(os.path.splitext(os.path.basename(x))[0]))
     fid_values = []
-    Im_ind = []
-    for i in range(len(files2)):
-        m1, s1 = calculate_activation_statistics([files1[i]], model, batch_size, dims, cuda)
-        m2, s2 = calculate_activation_statistics([files2[i]], model, batch_size, dims, cuda)
-        fid_values.append(calculate_frechet_distance(m1, s1, m2, s2))
-        Im_ind.append(int(files1[i].name[:-4]))
-        # Im_ind.append(int(files2[i].name[:-4]))
-    return fid_values
+    for fname in fnames:
+        m1, s1 = calculate_activation_statistics([os.path.join(path1, fname)], model, batch_size, dims, cuda)
+        m2, s2 = calculate_activation_statistics([os.path.join(path2, fname)], model, batch_size, dims, cuda)
+        fid = calculate_frechet_distance(m1, s1, m2, s2)
+        fid_values.append(fid)
 
+    return np.mean(fid_values)
 
-if __name__ == '__main__':
-    np.set_printoptions(suppress=True)
-    # reference_dir = '/home/ariel/university/GPDM/tests/downloaded_results/jpeg_100/Places50_org'
-    # fake_dirs = [
-    #     '/home/ariel/university/GPDM/images/Places50',
-    #     '/home/ariel/university/GPDM/outputs/reshuffle_table_#Coarse-28_#Projs-64_#Steps-300_#Reps-3/Places50_org/generated_images_0',
-    #     '/home/ariel/university/GPDM/outputs/reshuffle_table_#Coarse-28_#Projs-64_#Steps-300_#Reps-3/Places50_org/generated_images_1',
-    #     '/home/ariel/university/GPDM/outputs/reshuffle_table_#Coarse-28_#Projs-64_#Steps-300_#Reps-3/Places50_org/generated_images_1',
-    #     '/home/ariel/university/GPDM/images_for_paper_table/Places50_ours_high_var',
-    #     '/home/ariel/university/GPDM/tests/downloaded_results/jpeg_100/Places50_GPNN_high_var',
-    #     '/home/ariel/university/GPDM/tests/downloaded_results/jpeg_100/Places50_GPNN_mid_var',
-    #     '/home/ariel/university/GPDM/tests/downloaded_results/jpeg_100/Places50_SINGAN_high_var',
-    #     '/home/ariel/university/GPDM/tests/downloaded_results/jpeg_100/Places50_SINGAN_mid_var',
-    #     ]
-    # reference_dir = '/home/ariel/university/GPDM/tests/downloaded_results/jpeg_100/SIGD16_org'
-    reference_dir = '/home/ariel/university/GPDM/images/SIGD16'
-    fake_dirs = [
-        '/home/ariel/university/GPDM/images_for_paper_table/SIGD16_ours_high_var',
-        '/home/ariel/university/GPDM/tests/downloaded_results/jpeg_100/SIGD16_ours_high_var',
-        '/home/ariel/university/GPDM/tests/downloaded_results/jpeg_100/SIGD16_GPNN',
-        '/home/ariel/university/GPDM/tests/downloaded_results/jpeg_100/SIGD16_SINGAN',
-        '/home/ariel/university/repos/Efficient-GPNN/outputs/reshuffle/0',
-        '/home/ariel/university/repos/Efficient-GPNN/outputs/reshuffle/1'
-        ]
-        
-    suffix = 'jpg'
-    # suffix = 'png'
-    for fake_dir in fake_dirs:
-
-        sifid_values = calculate_sifid_given_paths(reference_dir, fake_dir, 1, False, 64, suffix)
-        sifid_values = np.asarray(sifid_values,dtype=np.float32)
-
-        print(f"{os.path.basename(fake_dir)} - SIFID: {sifid_values.mean():.7f}")
