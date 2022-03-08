@@ -32,7 +32,7 @@ class logger:
 
     def print(self):
         # pass
-        self.pbar.set_description(f'Lvl {self.lvl}/{self.n_lvls}, step {self.lvl_step}/{self.n_steps}')
+        self.pbar.set_description(f'Lvl {self.lvl}/{self.n_lvls-1}, step {self.lvl_step}/{self.n_steps}')
 
 
 class GPDM:
@@ -115,7 +115,7 @@ class GPDM:
 
         return initial_iamge
 
-    def match_patch_distributions(self, target_img, debug_dir, num_steps):
+    def match_patch_distributions(self, target_img, debug_dir, num_steps, mask=None):
         """
         Minimizes self.criteria(self.synthesized_image, target_img) for num_steps SGD steps
         :param target_img: tensor of shape (1, C, H, W)
@@ -126,14 +126,14 @@ class GPDM:
         for i in range(num_steps):
 
             # write optimization debut images
-            if debug_dir and (i % 100 == 0 or i == num_steps -1):
+            if debug_dir and (i % 10 == 0 or i == num_steps -1):
                 save_image(self.synthesized_image,
                            os.path.join(debug_dir, 'optimization', f'lvl-{self.pbar.lvl}-{self.pbar.lvl_step}.png'))
                 plot_loss(losses, os.path.join(debug_dir, 'train_losses',f'lvl-{self.pbar.lvl}-train_loss.png'))
 
             # Optimize image
             optim.zero_grad()
-            loss = self.criteria(self.synthesized_image, target_img)
+            loss = self.criteria(self.synthesized_image, target_img, mask)
             loss.backward()
             optim.step()
 
@@ -149,7 +149,7 @@ class GPDM:
 
         self.synthesized_image = torch.clip(self.synthesized_image, -1, 1)
 
-    def run(self, target_img_path, criteria, debug_dir=None):
+    def run(self, target_img_path, criteria, debug_dir=None, mask_img_path=None):
         """
         Run the GPDM model to generate an image with a similar patch distribution to target_img_path with a given criteria.
         This manages the coarse to fine optimization steps.
@@ -160,6 +160,8 @@ class GPDM:
         self.synthesized_image = self._get_initial_image()
         self.synthesized_image.requires_grad_(True)
         self.lr = self.starting_lr
+        if mask_img_path:
+            self.mask_pyramid = self._get_target_pyramid(mask_img_path)
 
         for lvl, lvl_target_img in enumerate(self.target_pyramid):
             self.pbar.new_lvl()
@@ -169,7 +171,10 @@ class GPDM:
                     self.synthesized_image = transforms.Resize((h, w), antialias=True)(self.synthesized_image)
                     self.synthesized_image.requires_grad_(True)
 
-            self.match_patch_distributions(lvl_target_img, debug_dir, self.num_steps)
+            self.match_patch_distributions(lvl_target_img,
+                                           debug_dir,
+                                           self.num_steps,
+                                           mask=self.mask_pyramid[lvl] if mask_img_path else None)
             if debug_dir:
                 save_image(lvl_target_img, os.path.join(debug_dir, f'target-lvl-{self.pbar.lvl}.png'))
                 save_image(self.synthesized_image, os.path.join(debug_dir, f'output-lvl-{self.pbar.lvl}.png'))

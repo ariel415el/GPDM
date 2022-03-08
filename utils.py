@@ -127,8 +127,8 @@ class LossesList(torch.nn.Module):
 
         self.name = name if name else "+".join([f"{w}*{l.name}" for l,w in zip(self.losses, self.weights)])
 
-    def forward(self, x, y):
-        return sum([self.losses[i](x, y) * self.weights[i] for i in range(len(self.losses))])
+    def forward(self, x, y, mask):
+        return sum([self.losses[i](x, y, mask) * self.weights[i] for i in range(len(self.losses))])
 
 
 class GrayLevelLoss(torch.nn.Module):

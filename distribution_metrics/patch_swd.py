@@ -24,12 +24,14 @@ def duplicate_to_match_lengths(arr1, arr2):
 
     return arr1, arr2
 
+
 def extract_patches(x, patch_size, stride):
     """Extract normalized patches from an image"""
     b, c, h, w = x.shape
     unfold = torch.nn.Unfold(kernel_size=patch_size, stride=stride)
     x_patches = unfold(x).transpose(1, 2).reshape(b, -1, 3, patch_size, patch_size)
     return x_patches.view(b, -1, 3 * patch_size ** 2)
+
 
 class PatchSWDLoss(torch.nn.Module):
     def __init__(self, patch_size=7, stride=1, num_proj=256, use_convs=True):
@@ -40,7 +42,7 @@ class PatchSWDLoss(torch.nn.Module):
         self.num_proj = num_proj
         self.use_convs = use_convs
 
-    def forward(self, x, y):
+    def forward(self, x, y, mask=None):
         b, c, h, w = x.shape
         assert b == 1, "Batches not implemented"
         rand = torch.randn(self.num_proj, 3, self.patch_size, self.patch_size).to(x.device) # (slice_size**2*ch)
@@ -53,6 +55,13 @@ class PatchSWDLoss(torch.nn.Module):
         else:
             projx = torch.matmul(extract_patches(x, self.patch_size, self.stride), rand)
             projy = torch.matmul(extract_patches(y, self.patch_size, self.stride), rand)
+
+        if mask is not None:
+            # duplicate patches that touches the mask by a factor
+            mask_patches_factor = 0
+            mask_patches = extract_patches(mask, self.patch_size, self.stride)[0] # in [-1,1]
+            mask_patches = torch.any(mask_patches > 0, dim=-1)
+            projy = torch.cat([projy[:, ~mask_patches]] + [projy[:, mask_patches]]*mask_patches_factor, dim=1)
 
         projx, projy = duplicate_to_match_lengths(projx, projy)
 
