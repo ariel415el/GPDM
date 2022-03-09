@@ -6,7 +6,23 @@ import distribution_metrics
 from GPDM import GPDM
 from utils import save_image
 
-image_paths = [
+
+def resample_textures(image_paths, out_dir, n_reps=1):
+    """
+    Smaller patch size adds variablility but may ruin large objects
+    """
+    criteria = distribution_metrics.PatchSWDLoss(patch_size=7, stride=1, num_proj=256)
+    model = GPDM(pyr_factor=0.85, coarse_dim=35, lr=0.05, num_steps=300, init='noise', noise_sigma=1.5, resize=0)
+
+    for input_image_path in image_paths:
+        for i in range(n_reps):
+
+            result = model.run(input_image_path, criteria, debug_dir=None)
+
+            save_image(result, os.path.join(out_dir, model.name, str(i), os.path.basename(input_image_path)))
+
+if __name__ == '__main__':
+    image_paths = [
         'images/textures/olives.png',
         'images/textures/tomatos.png',
         'images/textures/green_waves.jpg',
@@ -14,19 +30,7 @@ image_paths = [
         'images/style_transfer/style/brick.jpg',
         'images/style_transfer/style/mondrian.jpg',
         'images/style_transfer/style/rug.jpeg',
-
     ]
 
-def main():
-    criteria = distribution_metrics.PatchSWDLoss(patch_size=7, stride=1, num_proj=128)
-    for input_image_path in image_paths:
-        model = GPDM(pyr_factor=0.75, coarse_dim=32, resize=256, scale_factor=(2, 2), lr=0.03, num_steps=200, init='noise', noise_sigma=1.5, decay_steps=100)
-        output_dir = f'outputs/periodic_textures/{criteria.name}_{model.name}'
-        fname, ext = os.path.splitext(os.path.basename(input_image_path))[:2]
-        debug_dir = f'{output_dir}/debug_images/{fname}'
-        result = model.run(input_image_path, criteria, debug_dir)
-
-        save_image(result, f'{output_dir}/generated_images/{fname}{ext}')
-
-if __name__ == '__main__':
-    main()
+    out_dir = "outputs/resample_textures"
+    resample_textures(image_paths, out_dir)

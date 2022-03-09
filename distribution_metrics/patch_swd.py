@@ -34,13 +34,14 @@ def extract_patches(x, patch_size, stride):
 
 
 class PatchSWDLoss(torch.nn.Module):
-    def __init__(self, patch_size=7, stride=1, num_proj=256, use_convs=True):
+    def __init__(self, patch_size=7, stride=1, num_proj=256, use_convs=True, mask_patches_factor=0):
         super(PatchSWDLoss, self).__init__()
         self.name = f"ConvSWDLoss(p-{patch_size}:{stride})"
         self.patch_size = patch_size
         self.stride = stride
         self.num_proj = num_proj
         self.use_convs = use_convs
+        self.mask_patches_factor = mask_patches_factor
 
     def forward(self, x, y, mask=None):
         b, c, h, w = x.shape
@@ -58,10 +59,10 @@ class PatchSWDLoss(torch.nn.Module):
 
         if mask is not None:
             # duplicate patches that touches the mask by a factor
-            mask_patches_factor = 0
+
             mask_patches = extract_patches(mask, self.patch_size, self.stride)[0] # in [-1,1]
             mask_patches = torch.any(mask_patches > 0, dim=-1)
-            projy = torch.cat([projy[:, ~mask_patches]] + [projy[:, mask_patches]]*mask_patches_factor, dim=1)
+            projy = torch.cat([projy[:, ~mask_patches]] + [projy[:, mask_patches]]*self.mask_patches_factor, dim=1)
 
         projx, projy = duplicate_to_match_lengths(projx, projy)
 
