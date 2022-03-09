@@ -1,3 +1,6 @@
+from collections import defaultdict
+
+import cv2
 import torch
 from time import time
 import numpy as np
@@ -5,14 +8,14 @@ import faiss
 import pandas as pd
 
 
-def get_NN_indices_faiss(X, Y, dim, index='flat', n_first=1):
+def get_NN_indices_faiss(X, Y, dim, index='flat', n_first=1, on_gpu=False):
     X = np.ascontiguousarray(X.cpu().numpy(), dtype='float32')
     Y = np.ascontiguousarray(Y.cpu().numpy(), dtype='float32')
 
     if index == 'flat':
         index = faiss.IndexFlat(dim)
     elif index == 'ivf':
-        index = faiss.IndexIVFFlat(faiss.IndexFlat(dim), dim, 100)
+        index = faiss.IndexIVFFlat(faiss.IndexFlat(dim), dim, int(np.sqrt(len(X))))
         index.nprobe = 2
         index.train(Y)
     elif index == 'lsh':
@@ -20,14 +23,14 @@ def get_NN_indices_faiss(X, Y, dim, index='flat', n_first=1):
     else:
         raise ValueError
 
-    # index = faiss.index_cpu_to_all_gpus(index)
-    res = faiss.StandardGpuResources()
-    index = faiss.index_cpu_to_gpu(res, 0, index)
+    if on_gpu:
+        # index = faiss.index_cpu_to_all_gpus(index)
+        res = faiss.StandardGpuResources()
+        index = faiss.index_cpu_to_gpu(res, 0, index)
 
     index.add(Y)  # add vectors to the index
 
     _, I = index.search(X, n_first)  # actual search
-    print(4)
 
     NNs = I[:, 0]
 
@@ -100,47 +103,63 @@ def time_call(func, X, Y, *args):
 
     return np.mean(times), np.std(times)
 
-def compute_ann_accuracy(s, p):
-    n = s ** 2
-    d = 3 * p ** 2
-    X = torch.randn((n, d))
-    Y = torch.randn((n, d))
+def get_vectors_from_img(path, resize):
+    img = cv2.imread(path)
+    img = cv2.resize(img, (resize, resize))[None, :]
+    unfold = torch.nn.Unfold(kernel_size=p, stride=1)
+    vecs = unfold(torch.from_numpy(img).float().permute(0,3,1,2))[0].T
+    return vecs
 
-    nn_fais, I = get_NN_indices_faiss(X, Y, d, 'ivf', n_first=10)
-    nn = get_NN_indices_low_memory(X, Y, 1, b=256).numpy()
+def compute_ann_accuracy():
+    # n = s ** 2
+    # d = 3 * p ** 2
+    # X = torch.randn((n, d))
+    # Y = torch.randn((n, d))
+    table = pd.DataFrame()
+    for s in [64, 128]:
+        X = get_vectors_from_img('/home/ariel/university/GPDM/images/Places50/50.jpg', resize=s)
+        Y = get_vectors_from_img('/home/ariel/university/GPDM/images/Places50/37.jpg', resize=s)
+        n, d = X.shape
 
-    recall = np.sum(nn_fais == nn) / nn.shape[0]
-    n_recall = np.sum([nn[i] in I[i] for i in range(n)]) / nn.shape[0]
-    dist_faiss = ((X - Y[nn_fais])**2).sum(1).mean()
-    dist_true = ((X - Y[nn])**2).sum(1).mean()
+        nn_fais, I = get_NN_indices_faiss(X, Y, d, 'ivf', n_first=10)
+        nn = get_NN_indices_faiss(X, Y, d, 'flat', n_first=1)
+        # nn = get_NN_indices_low_memory(X, Y, 1, b=256).numpy()
 
-    print(recall)
-    print(n_recall)
-    print(dist_faiss)
-    print(dist_true)
+        column = {
+            'Recall-1': np.sum(nn_fais == nn) / nn.shape[0],
+            'Recall-10': np.sum([nn[i] in I[i] for i in range(n)]) / nn.shape[0],
+            'faiss-IVF-dists': ((X - Y[nn_fais])**2).sum(1).mean().item(),
+            'True-dists':((X - Y[nn])**2).sum(1).mean().item()
+        }
+        table[s] = pd.Series(column)
+        print(column)
+        table.to_csv("accuracy_table.csv")
 
-    x =1
+
+def compute_runtime():
+    table = pd.DataFrame()
+    for s in range(64, 512 + 1, 64):
+        n = s ** 2
+        d = 3 * p ** 2
+        swd_loss = swd(p, n_proj=64)
+        X = torch.randn((n, d)).to(device)
+        Y = torch.randn((n, d)).to(device)
+
+        column = {
+            'Pytorch-NN': time_call(get_NN_indices_low_memory, X, Y, 1, 256)[0],
+            'SWD': time_call(swd_loss, X, Y)[0],
+            'faiss-PureNN': time_call(get_NN_indices_faiss, X, Y, d, 'flat')[0],
+            'faiss-IVF':time_call(get_NN_indices_faiss, X, Y, d, 'ivf')[0]
+        }
+        table[s] = pd.Series(column)
+        print(column)
+        table.to_csv("timing_table.csv")
 
 if __name__ == '__main__':
-    # compute_ann_accuracy(128, 7)
-    # exit()
-
+    p = 7
     n_reps = 50
     device = torch.device('cuda:0')
-    with torch.no_grad():
-        full_report = pd.DataFrame()
-        for s in [16]: # 64, 128, 256, 512, 1024]:
-            for p in [7]:
-                n = s ** 2
-                d = 3 * p ** 2
-                swd_loss = swd(p, n_proj=256)
-                X = torch.randn((n, d)).to(device)
-                Y = torch.randn((n, d)).to(device)
+    # device = torch.device('cpu')
 
-                print(s, p)
-                # print(f"Pytorch-NN  ", time_call(get_NN_indices_low_memory, X, Y, 1, 256))
-                # print(f"SWD         ", time_call(swd_loss, X, Y))
-                print(f"faiss-PureNN", time_call(get_NN_indices_faiss, X, Y, d, 'flat'))
-                # print(f"faiss-IVF   ", time_call(get_NN_indices_faiss, X, Y, d, 'ivf'))
-
-
+    # compute_ann_accuracy()
+    compute_runtime()
