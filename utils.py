@@ -39,12 +39,23 @@ def cv2pt(img):
 
     return img
 
+# def resize(img, size):
+#     blur_size = (img.shape[0], )
+
+
 def aspect_ratio_resize(img, max_dim=256):
-    y, x, c = img.shape
-    if x > y:
-        return cv2.resize(img, (max_dim, int(y/x*max_dim)))
+    h, w, c = img.shape
+
+    if w > h:
+        if (w / max_dim) > 1:
+            blur_size = int((h / max_dim) * (3 / 2))
+            img = cv2.blur(img, ksize=(blur_size, blur_size))
+        return cv2.resize(img, (max_dim, int(h/w*max_dim)))
     else:
-        return cv2.resize(img, (int(x/y*max_dim), max_dim))
+        if (h / max_dim) > 1:
+            blur_size = int((h / max_dim) * (3 / 2))
+            img = cv2.blur(img, ksize=(blur_size, blur_size))
+        return cv2.resize(img, (int(w/h*max_dim), max_dim))
 
 
 def match_image_sizes(input, target):
@@ -81,13 +92,6 @@ def downscale(img, pyr_factor):
     # return cv2.resize(img, (new_x, new_y), interpolation=cv2.INTER_AREA)
     return transforms.Resize((new_y, new_x), antialias=True)(img)
 
-
-# def get_pyramid(img, n_levels, pyr_factor):
-#     res = [img]
-#     for i in range(n_levels):
-#         img = downscale(img, pyr_factor)
-#         res = [img] + res
-#     return res
 
 def get_pyramid(img, min_size, pyr_factor):
     res = [img]
