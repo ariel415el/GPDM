@@ -73,7 +73,7 @@ class GPDM:
         self.decay_steps = decay_steps
 
         init_name = 'img' if os.path.exists(self.init) else self.init
-        self.name = f'R-{resize}x{pyr_factor}->{coarse_dim}_I-{init_name}+I(0,{noise_sigma})'
+        self.name = f'R-{resize}x{pyr_factor}-to-{coarse_dim}_I-{init_name}+I(0,{noise_sigma})'
 
     def _get_target_pyramid(self, target_img_path):
         """Reads an image and create a pyraimd out of it. Ordered in increasing image size"""
