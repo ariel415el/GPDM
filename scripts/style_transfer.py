@@ -37,7 +37,7 @@ def style_transfer(input_and_target_images, out_dir):
         model = GPDM(coarse_dim=resize, lr=lr, num_steps=num_steps, init=content_image_path, noise_sigma=0, resize=resize)
 
         result = model.run(style_image_path, criteria, debug_dir=None)
-        output_path = os.path.join(out_dir, model.name, criteria.name, f'{get_file_name(content_image_path)}-to-{get_file_name(style_image_path)}.png')
+        output_path = os.path.join(out_dir, model.name, f'{get_file_name(content_image_path)}-to-{get_file_name(style_image_path)}.png')
         save_image(result, output_path)
 
 
