@@ -15,4 +15,4 @@ build:
     - "dataclasses==0.6"
     - "tqdm==4.63.1"
 
-predict: "predict.py:Predictor"
+predict: "scripts/predict.py:Predictor"
