@@ -24,6 +24,9 @@ some interesting retargeting images in the images folder
 <!-- ![Teaser](Readme_images/Retargeting.png) ![Teaser](Readme_images/Retargeting_H.png) -->
 
 # Style transfer
+
+Try the Replicate web demo here [![Replicate](https://replicate.com/ariel415el/gpdm/badge)](https://replicate.com/ariel415el/gpdm)
+
 `
 python3 scripts/style_transfer.py
 `
