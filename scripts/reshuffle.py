@@ -1,5 +1,6 @@
 import sys
 import os
+from pathlib import Path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import distribution_metrics
@@ -23,6 +24,7 @@ def reshuffle(dataset_dir, out_dir, n_reps=1):
 
 if __name__ == '__main__':
     out_dir = "outputs/reshuffle"
-    reshuffle('/home/ariel/university/GPDM/images/SIGD16', out_dir)
-    reshuffle('/home/ariel/university/GPDM/images/Places50', out_dir)
-    reshuffle('/home/ariel/university/GPDM/images/reshuffle', out_dir)
+    base_dir = Path(__file__).parent.parent
+    reshuffle(base_dir / 'images/SIGD16', out_dir)
+    reshuffle(base_dir / 'images/Places50', out_dir)
+    reshuffle(base_dir / 'images/reshuffle', out_dir)

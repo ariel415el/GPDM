@@ -1,5 +1,6 @@
 import sys
 import os
+from pathlib import Path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import distribution_metrics
@@ -27,7 +28,8 @@ def reshuffle_hq(image_paths, out_dir, n_reps=1):
 if __name__ == '__main__':
 
     image_paths = []
-    dataset_dir = '/home/ariel/university/GPDM/images/HQ_16'
+    base_dir = Path(__file__).parent.parent
+    dataset_dir = base_dir / 'images/HQ_16'
     image_paths += [os.path.join(dataset_dir, x) for x in os.listdir(dataset_dir)]
     image_paths = [x for x in image_paths if ('rio' in x or 'lambs' in x or 'safari' in x)]
 
