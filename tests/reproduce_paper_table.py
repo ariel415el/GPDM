@@ -1,66 +1,59 @@
-import sys
 import os
-from time import time
-
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-sys.path.append((os.path.dirname(os.path.abspath(__file__))))
-
-import distribution_metrics
-from GPDM import GPDM
-from utils import save_image, get_file_name
-
-from tests.SIFID.sifid_score import calculate_sifid_given_paths
-from tests.compute_diversity import compute_images_diversity
+import torch
 import numpy as np
+from time import time
+import GPDM
+from patch_swd import PatchSWDLoss
+from utils import load_image, dump_images, get_scales
+from tests.sifid_score import compute_SIFID
 
 
-def get_sifd_and_diversity(images_dir, output_dir, coarse_dim, num_proj, num_steps, num_reps):
-    image_paths = [os.path.join(images_dir, x) for x in os.listdir(images_dir)]
-    file_extension = image_paths[0].split(".")[-1]
+def compute_diversity(refernce_images, generated_images):
+    """
+    :param refernce_images: (1, c, h, w)
+    :param generated_images: (b, c, h, w)
+    """
+    gray_ref = torch.mean(refernce_images, dim=1)
+    gray_images = torch.mean(generated_images, dim=1)
+    diversity = torch.std(gray_images, dim=0).mean() / torch.std(gray_ref)
 
-    run_times = []
-    sfid_scores = []
-    result_images_dirs = []
-    criteria = distribution_metrics.PatchSWDLoss(patch_size=7, stride=1, num_proj=num_proj)
-    model = GPDM(pyr_factor=0.85, coarse_dim=coarse_dim, lr=0.05, num_steps=num_steps, init='noise', noise_sigma=1.5, resize=0)
-    for i in range(num_reps):
-        generation_dir = os.path.join(output_dir, os.path.basename(dataset_dir), f'generated_images_{i}')
-        result_images_dirs.append(generation_dir)
-        for j,input_image_path in enumerate(image_paths):
-            print(f"Status: Dataset={os.path.basename(images_dir)}, iter={i}, im={j}/{len(image_paths)}")
-
-            start = time()
-            fname = get_file_name(input_image_path).split(".")[0]
-            # debug_dir = os.path.join(output_dir, os.path.basename(dataset_dir), f'debug_{i}', fname)
-            debug_dir = None
-            result = model.run(input_image_path, criteria, debug_dir=debug_dir)
-            run_times.append(time() - start)
-
-            save_image(result, os.path.join(generation_dir, os.path.basename(input_image_path)))
-
-        sfid = np.asarray(calculate_sifid_given_paths(images_dir, generation_dir, 1, False, 64, file_extension)).mean()
-        sfid_scores.append(sfid)
-
-    sfid = np.mean(sfid_scores)
-    diversity = compute_images_diversity(result_images_dirs, images_dir)
-    runtime = np.mean(run_times)
-
-    return sfid, diversity, runtime
+    return  diversity
 
 
 if __name__ == '__main__':
-    num_proj = 64
-    num_steps = 300
-    num_reps = 15
-    coarse_dim = 28
-    output_dir = os.path.join(f'outputs', f'reshuffle_table_#Coarse-{coarse_dim}_#Projs-{num_proj}_#Steps-{num_steps}_#Reps-{num_reps}')
+    dataset_path = "images/SIGD16"
+    output_dir = "test_oputputs/SIGD16"
+    num_repetitions = 10
+    batch_size = 10
     os.makedirs(output_dir, exist_ok=True)
     f = open(os.path.join(output_dir, f'table.txt'), 'w+')
-    f.write("Dataset, SFID, Diversity, runtime\n")
-    for dataset_dir in [
-                        # "images/SIGD16",
-                        '/home/ariel/university/GPDM/tests/downloaded_results/jpeg_100/Places50_org'
-                        # "images/Places5"
-                        ]:
-        sfid, diversity, runtime = get_sifd_and_diversity(dataset_dir, output_dir, coarse_dim, num_proj, num_steps, num_reps)
-        f.write(f"{os.path.basename(dataset_dir)}, {sfid}, {diversity}, {runtime}")
+    f.write("Image, SFID, Diversity, images/sec\n")
+
+    criteria = PatchSWDLoss(patch_size=7, stride=1, num_proj=256)
+
+    sifid_scores = []
+    diversities = []
+    for img_name in os.listdir(dataset_path)[:2]:
+        refernce_image = load_image(os.path.join(dataset_path, img_name))
+        img_name = os.path.basename(img_name)
+
+        start = time()
+        generated_images = []
+        for n_batches in range(num_repetitions // batch_size):
+
+            scales = get_scales(refernce_image.shape[-2], 28, 0.85)
+            new_images = GPDM.generate(refernce_image.repeat(batch_size, 1, 1, 1), criteria, scales=scales, lr=0.05, additive_noise_sigma=1.5)
+
+            generated_images.append(new_images)
+        generated_images = torch.cat(generated_images, dim=0)
+        dump_images(generated_images, os.path.join(output_dir, img_name))
+
+        run_time = time() - start
+        diversity = compute_diversity(refernce_image, generated_images)
+        SIFID = compute_SIFID(refernce_image, generated_images, n_convblocks=0)
+        diversities.append(diversity)
+        sifid_scores.append(SIFID)
+        f.write(f"{img_name}, {SIFID:.3f}, {diversity:.3f}, {len(generated_images)/run_time:.3f}\n")
+
+    f.write(f"Avg, {np.mean(sifid_scores):.3f}, {np.mean(diversities):.3f}\n")
+    f.close()

@@ -1,2 +1,0 @@
-from distribution_metrics.patch_swd import PatchSWDLoss
-from distribution_metrics.patch_coherence_loss import PatchCoherentLoss
