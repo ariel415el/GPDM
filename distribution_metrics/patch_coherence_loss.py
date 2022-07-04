@@ -15,7 +15,7 @@ def compute_dists(x, y):
 
 def dist_mat(input_patches, target_patches):
     dist_matrix = torch.zeros((len(input_patches), len(target_patches)), dtype=torch.float16).to(input_patches.device)
-    b = 64
+    b = 16
     n_batches = len(input_patches) // b
     for i in range(n_batches):
         # dist_matrix[i * b:(i + 1) * b] = torch.cdist(input_patches[i * b:(i + 1) * b], target_patches) **2
@@ -26,8 +26,8 @@ def dist_mat(input_patches, target_patches):
     return dist_matrix
 
 def compute_patch_coherence(input_patches, target_patches, mode='detached'):
-    dist_matrix = torch.cdist(target_patches, input_patches)
-    # dist_matrix = dist_mat(target_patches, input_patches)
+    # dist_matrix = torch.cdist(target_patches, input_patches)
+    dist_matrix = dist_mat(target_patches, input_patches)
     min_indices = torch.min(dist_matrix, dim=0)[1]
 
     if mode == 'detached':
@@ -49,7 +49,7 @@ class PatchCoherentLoss(torch.nn.Module):
         self.batch_reduction = batch_reduction
         self.mode = mode
 
-    def forward(self, x, y):
+    def forward(self, x, y, mask=None):
         b, c, h, w = x.shape
 
         if self.stride > 1:
