@@ -22,8 +22,8 @@ def dump_images(images, out_dir):
         i += 1
 
 
-def get_scales(height, min_height, step):
-    cur_scale = height
+def get_pyramid_scales(max_height, min_height, step):
+    cur_scale = max_height
     scales = [cur_scale]
     while cur_scale > min_height:
         if type(step) == float:

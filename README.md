@@ -1,8 +1,12 @@
 # GPDM
-Original Pytorch implementation of the GPDM model introduced in ["Generating Natural Images with Direct Patch Distribution Matching"](https://arxiv.org/abs/2203.11862)
+Original Pytorch implementation of the GPDM algorithm introduced in
 
+["Generating Natural Images with Direct Patch Distribution Matching"](https://arxiv.org/abs/2203.11862)
 
 ![Teaser](Readme_images/Teaser_Figure.png)
+
+## [**Live-demo**](https://replicate.com/ariel415el/gpdm) | [**Paper**](https://arxiv.org/abs/2203.11862)
+
 
 # Reshuffling
 `
@@ -24,9 +28,6 @@ some interesting retargeting images in the images folder
 <!-- ![Teaser](Readme_images/Retargeting.png) ![Teaser](Readme_images/Retargeting_H.png) -->
 
 # Style transfer
-
-Try the Replicate web demo here [![Replicate](https://replicate.com/ariel415el/gpdm/badge)](https://replicate.com/ariel415el/gpdm)
-
 `
 python3 scripts/style_transfer.py
 `
@@ -35,3 +36,10 @@ In the images folder you can find images I collected from various repos and pape
 
 ![Teaser](Readme_images/Style_Transfer.png)
 
+# Cite
+@article{elnekave2022generating,
+  title={Generating natural images with direct Patch Distributions Matching},
+  author={Elnekave, Ariel and Weiss, Yair},
+  journal={arXiv preprint arXiv:2203.11862},
+  year={2022}
+}

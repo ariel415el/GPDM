@@ -10,7 +10,7 @@ from utils import plot_loss, load_image
 def generate(reference_images,
              criteria,
              init_from: str = 'mean',
-             scales=(32, 64, 128, 256),
+             pyramid_scales=(32, 64, 128, 256),
              lr: float = 0.01,
              num_steps: int = 300,
              aspect_ratio=(1, 1),
@@ -21,14 +21,14 @@ def generate(reference_images,
     Run the GPDM model to generate an image/s with a similar patch distribution to reference_images/s with a given criteria.
     This manages the coarse to fine optimization steps.
     """
-    pbar = GPDMLogger(num_steps, len(scales))
+    pbar = GPDMLogger(num_steps, len(pyramid_scales))
     criteria = criteria.to(device)
 
     reference_images = reference_images.to(device)
     synthesized_images = get_fist_initial_guess(reference_images, init_from, additive_noise_sigma).to(device)
     initial_image_shape = synthesized_images.shape[-2:]
 
-    for scale in scales:
+    for scale in pyramid_scales:
         pbar.new_lvl()
         lvl_references = tv_resize(scale)(reference_images)
         lvl_output_shape = get_output_shape(initial_image_shape, scale, aspect_ratio)

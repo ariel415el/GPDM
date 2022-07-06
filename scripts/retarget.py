@@ -4,7 +4,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from os.path import join, basename
 import GPDM
 from patch_swd import PatchSWDLoss
-from utils import load_image, dump_images, get_scales
+from utils import load_image, dump_images, get_pyramid_scales
 
 if __name__ == '__main__':
     n_images = 5
@@ -14,7 +14,7 @@ if __name__ == '__main__':
     criteria = PatchSWDLoss(patch_size=8, stride=1, num_proj=64)
 
     new_iamges = GPDM.generate(refernce_images, criteria,
-                               scales=get_scales(refernce_images.shape[-2], 32, 16),
+                               pyramid_scales=get_pyramid_scales(refernce_images.shape[-2], 32, 16),
                                aspect_ratio=(1, 2),
                                init_from="target",
                                additive_noise_sigma=0.01
