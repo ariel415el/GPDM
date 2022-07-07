@@ -1,9 +1,0 @@
-__pycache__/
-/scripts/outputs
-/.idea
-/tests/downloaded_results
-/unused_images
-/fast_style_transfer
-/outputs
-images/HQ_16/safari.jpg
-images/HQ_16/elephants.jpg

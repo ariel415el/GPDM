@@ -1,4 +1,6 @@
 import os
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import torch
 import numpy as np
 from time import time
@@ -17,23 +19,23 @@ def compute_diversity(refernce_images, generated_images):
     gray_images = torch.mean(generated_images, dim=1)
     diversity = torch.std(gray_images, dim=0).mean() / torch.std(gray_ref)
 
-    return  diversity
+    return  diversity.item()
 
 
 if __name__ == '__main__':
     dataset_path = "images/SIGD16"
     output_dir = "test_oputputs/SIGD16"
-    num_repetitions = 10
-    batch_size = 10
+    num_repetitions = 50
+    batch_size = 50
     os.makedirs(output_dir, exist_ok=True)
     f = open(os.path.join(output_dir, f'table.txt'), 'w+')
     f.write("Image, SFID, Diversity, images/sec\n")
 
-    criteria = PatchSWDLoss(patch_size=7, stride=1, num_proj=256)
+    criteria = PatchSWDLoss(patch_size=7, stride=1, num_proj=64)
 
     sifid_scores = []
     diversities = []
-    for img_name in os.listdir(dataset_path)[:2]:
+    for img_name in os.listdir(dataset_path):
         refernce_image = load_image(os.path.join(dataset_path, img_name))
         img_name = os.path.basename(img_name)
 
