@@ -1,7 +1,6 @@
-import os
+from os.path import join, basename, dirname, abspath
 import sys
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from os.path import join, basename
+sys.path.append(dirname(dirname(abspath(__file__))))
 import GPDM
 from patch_swd import PatchSWDLoss
 from utils import load_image, dump_images, get_pyramid_scales

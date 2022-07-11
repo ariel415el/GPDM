@@ -9,7 +9,7 @@ from utils import plot_loss, load_image
 
 def generate(reference_images,
              criteria,
-             init_from: str = 'mean',
+             init_from: str = 'zeros',
              pyramid_scales=(32, 64, 128, 256),
              lr: float = 0.01,
              num_steps: int = 300,
@@ -36,6 +36,9 @@ def generate(reference_images,
 
         synthesized_images = _match_patch_distributions(synthesized_images, lvl_references, criteria, num_steps, lr,
                                                         pbar, debug_dir)
+        # Decrease learning rate
+        lr *= 0.9
+
         if debug_dir:
             save_image(lvl_references, os.path.join(debug_dir, f'references-lvl-{pbar.lvl}.png'), normalize=True)
             save_image(synthesized_images, os.path.join(debug_dir, f'outputs-lvl-{pbar.lvl}.png'), normalize=True)
@@ -100,15 +103,15 @@ class GPDMLogger:
 
 def get_fist_initial_guess(reference_images, init_from, additive_noise_sigma):
     synthesized_images = None
-    if init_from == "mean":
-        synthesized_images = torch.mean(reference_images, dim=1, keepdim=True).repeat(1, 3, 1, 1)
+    if init_from == "zeros":
+        synthesized_images = torch.zeros_like(reference_images)
     elif init_from == "target":
         synthesized_images = reference_images.clone()
     elif os.path.exists(init_from):
         synthesized_images = load_image(init_from)
         synthesized_images = synthesized_images.repeat(reference_images.shape[0], 1, 1, 1)
     else:
-        ValueError("Bad init mode", init_from)
+        raise ValueError("Bad init mode", init_from)
     if additive_noise_sigma:
         synthesized_images += torch.randn_like(synthesized_images) * additive_noise_sigma
     return synthesized_images

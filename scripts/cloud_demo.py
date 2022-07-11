@@ -48,7 +48,7 @@ class Predictor(BasePredictor):
         ref_height = refernce_images.shape[-2]
 
         kwargs = {
-            'init_from':"mean",
+            'init_from':"zeros",
             'lr':0.01,
             'num_steps': 300,
             'additive_noise_sigma': 0,

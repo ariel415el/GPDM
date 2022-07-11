@@ -13,7 +13,7 @@ def load_image(path):
 
 def dump_images(images, out_dir):
     if os.path.exists(out_dir):
-        i = len(out_dir)
+        i = len(os.listdir(out_dir))
     else:
         i = 0
         os.makedirs(out_dir)
