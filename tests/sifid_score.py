@@ -4,6 +4,25 @@ from scipy import linalg
 import torch.nn as nn
 from torchvision import models
 
+
+def compute_SIFID(refernce_images, generated_images, n_convblocks=4, device=torch.device("cuda:0")):
+    """
+    :param refernce_images: (1, c, h, w)
+    :param generated_images: (b, c, h, w)
+    :return:
+    """
+    with torch.no_grad():
+        model = InceptionV3FeatureExtractor(n_convblocks).to(device)
+        ref_mu, ref_sigma = model.get_statistics(refernce_images.to(device))
+        sfid_scores = []
+        for i in range(generated_images.shape[0]):
+            mu, sigma = model.get_statistics(generated_images[i].unsqueeze(0).to(device))
+            sifid = calculate_frechet_distance(ref_mu, ref_sigma, mu, sigma)
+            sfid_scores.append(sifid)
+
+    return np.mean(sfid_scores)
+
+
 def calculate_frechet_distance(mu1, sigma1, mu2, sigma2, eps=1e-6):
     """Numpy implementation of the Frechet Distance.
     The Frechet distance between two multivariate Gaussians X_1 ~ N(mu_1, C_1)
@@ -134,19 +153,3 @@ class InceptionV3FeatureExtractor(nn.Module):
         return mu, sigma
 
 
-def compute_SIFID(refernce_images, generated_images, n_convblocks=4, device=torch.device("cuda:0")):
-    """
-    :param refernce_images: (1, c, h, w)
-    :param generated_images: (b, c, h, w)
-    :return:
-    """
-    with torch.no_grad():
-        model = InceptionV3FeatureExtractor(n_convblocks).to(device)
-        ref_mu, ref_sigma = model.get_statistics(refernce_images.to(device))
-        sfid_scores = []
-        for i in range(generated_images.shape[0]):
-            mu, sigma = model.get_statistics(generated_images[i].unsqueeze(0).to(device))
-            sifid = calculate_frechet_distance(ref_mu, ref_sigma, mu, sigma)
-            sfid_scores.append(sifid)
-
-    return np.mean(sfid_scores)

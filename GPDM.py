@@ -102,7 +102,6 @@ class GPDMLogger:
 
 
 def get_fist_initial_guess(reference_images, init_from, additive_noise_sigma):
-    synthesized_images = None
     if init_from == "zeros":
         synthesized_images = torch.zeros_like(reference_images)
     elif init_from == "target":

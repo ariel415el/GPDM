@@ -1,5 +1,3 @@
-from collections import defaultdict
-
 import cv2
 import torch
 from time import time
@@ -7,13 +5,15 @@ import numpy as np
 import faiss
 import pandas as pd
 
-
+"""
+NN search modules taken from https://github.com/ariel415el/Efficient-GPNN
+"""
 
 class FaissFlat:
     def __init__(self, n_first=1, use_gpu=False):
         self.use_gpu = use_gpu
         self.n_first = n_first
-        self.name = "FaissFlat(" + ("GPU" if self.use_gpu else "CPU") + ")"
+        self.name = "FaissFlat" + ("GPU" if self.use_gpu else "CPU") + ")"
 
     def init_index(self, Y):
         dim = Y.shape[-1]
@@ -42,7 +42,7 @@ class FaissIVF(FaissFlat):
     def __init__(self, nprobe=1, n_first=1, use_gpu=False):
         super(FaissIVF, self).__init__(n_first, use_gpu)
         self.nprobe = nprobe
-        self.name = "FaissIVF(" + ("GPU" if self.use_gpu else "CPU") + ")"
+        self.name = f"FaissIVF(nprobe={nprobe}, " + ("GPU" if self.use_gpu else "CPU") + ")"
 
     def _get_index(self, n, d):
         return faiss.IndexIVFFlat(faiss.IndexFlat(d), d, int(np.sqrt(n)))
@@ -63,7 +63,7 @@ class FaissIVF(FaissFlat):
 class FaissIVFPQ(FaissIVF):
     def __init__(self, nprobe=1, n_first=1, use_gpu=False):
         super(FaissIVFPQ, self).__init__(nprobe, n_first, use_gpu)
-        self.name = "FaissIVF-PQ(" + ("GPU" if self.use_gpu else "CPU") + ")"
+        self.name = f"FaissIVF-PQ(nprobe={nprobe}, " + ("GPU" if self.use_gpu else "CPU") + ")"
 
     def _get_index(self, n, d):
         return faiss.IndexIVFPQ(faiss.IndexFlatL2(d), d, int(np.sqrt(n)), 8, 8)
@@ -113,7 +113,7 @@ class PytorchNN:
 class swd:
     def __init__(self, patch_size=7, n_proj=256, use_gpu=False):
         self.device = torch.device("cuda:0" if use_gpu else 'cpu')
-        self.name = "SWD(" + ("GPU" if use_gpu else "CPU") + ")"
+        self.name = f"SWD(n_proj={n_proj}, " + ("GPU" if use_gpu else "CPU") + ")"
         self.rand = torch.randn(3 * patch_size ** 2, n_proj).to(self.device)  # (slice_size**2*ch)
 
     def __call__(self, X, Y):
@@ -128,7 +128,7 @@ class swd:
         return loss
 
 
-def time_call(func, X, Y, *args):
+def measure_funtion_call_time(func, X, Y, *args):
     func(X, Y, *args)
     times = []
     try:
@@ -152,33 +152,35 @@ def get_vectors_from_img(path, resize):
 
 
 def compute_ann_accuracy(resize=256):
-
-    # NN = FaissFlat(use_gpu=True, n_first=1)
-    NN = PytorchNN(use_gpu=True)
-    ANNs = [
+    """Compute the accuracy of various aproximate Faiss nearest neighbor methods compared with exact NN on real images"""
+    # exact_NN = FaissFlat(use_gpu=True, n_first=1)
+    exact_NN = PytorchNN(use_gpu=True)
+    Aproximagte_NNs = [
         FaissIVF(nprobe=1, n_first=10, use_gpu=True),
+        # FaissIVF(nprobe=10, n_first=10, use_gpu=True),
         FaissIVFPQ(nprobe=1, n_first=10, use_gpu=True),
+        # FaissIVFPQ(nprobe=10, n_first=10, use_gpu=True),
     ]
 
-    X = get_vectors_from_img('/home/ariel/university/GPDM/images/Places50/50.jpg', resize=resize)
-    Y = get_vectors_from_img('/home/ariel/university/GPDM/images/Places50/37.jpg', resize=resize)
+    X = get_vectors_from_img('../images/Places50/1.jpg', resize=resize)
+    Y = get_vectors_from_img('../images/Places50/2.jpg', resize=resize)
     n, d = X.shape
-    nn = NN(X, Y)
+    exact_nn = exact_NN(X, Y)
 
     table = pd.DataFrame()
-    for ANN in ANNs:
+    for ANN in Aproximagte_NNs:
 
-        nn_fais, I = ANN(X, Y)
+        ann, I = ANN(X, Y)
 
-        recall =  np.sum(nn_fais == nn) / nn.shape[0]
-        n_recall = np.sum([nn[i] in I[i] for i in range(n)]) / nn.shape[0]
-        nn_dists = ((X - Y[nn])**2).sum(1).mean().item()
-        ann_dists = ((X - Y[nn_fais])**2).sum(1).mean().item()
+        recall = np.sum(ann == exact_nn) / exact_nn.shape[0]
+        n_recall = np.sum([exact_nn[i] in I[i] for i in range(n)]) / exact_nn.shape[0]
+        nn_dists = ((X - Y[exact_nn])**2).sum(1).mean().item()
+        ann_dists = ((X - Y[ann])**2).sum(1).mean().item()
 
         column = {
             'Recall-1': recall,
             'Recall-10': n_recall,
-            'ANN-dist-overhead': f"{ann_dists / nn_dists * 100 - 100:.0f} %",
+            'ANN-distance over NN-distance': f"{ann_dists / nn_dists * 100 - 100:.0f} %",
         }
 
         table[ANN.name] = pd.Series(column)
@@ -186,25 +188,27 @@ def compute_ann_accuracy(resize=256):
         table.to_csv("accuracy_table.csv")
 
 
-def compute_runtime():
+def produce_timing_table():
+    """measure the time it takes to compute NN, approximate NN and SWD on different sizes of patch sets"""
     methods = [
-        # swd(p, n_proj=64, use_gpu=False),
+        swd(p, n_proj=64, use_gpu=True),
         # PytorchNN(batch_size=256, alpha=1, use_gpu=False),
-        # FaissFlat(use_gpu=False),
-        # FaissIVF(nprobe=1, n_first=1, use_gpu=True),
-        FaissIVFPQ(nprobe=1, n_first=1, use_gpu=False),
+        FaissFlat(use_gpu=True),
+        FaissIVF(nprobe=1, n_first=1, use_gpu=True),
+        # FaissIVF(nprobe=10, n_first=1, use_gpu=True),
+        FaissIVFPQ(nprobe=1, n_first=1, use_gpu=True),
     ]
     table = pd.DataFrame()
-    for s in range(320, 1024 + 1, 64):
+    for s in [64, 128, 256, 512, 1024]:
         n = s ** 2
         d = 3 * p ** 2
         X = torch.randn((n, d))
         Y = torch.randn((n, d))
 
-        column = {method.name: time_call(method, X, Y)[0] for method in methods}
+        column = {method.name: measure_funtion_call_time(method, X, Y)[0] for method in methods}
 
         table[s] = pd.Series(column)
-        print(column)
+        print(f"Res {s}: {column}")
         table.to_csv("timing_table.csv")
 
 if __name__ == '__main__':
@@ -212,4 +216,4 @@ if __name__ == '__main__':
     n_reps = 1
 
     # compute_ann_accuracy()
-    compute_runtime()
+    produce_timing_table()
