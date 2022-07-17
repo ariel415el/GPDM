@@ -9,6 +9,7 @@ import pandas as pd
 NN search modules taken from https://github.com/ariel415el/Efficient-GPNN
 """
 
+
 class FaissFlat:
     def __init__(self, n_first=1, use_gpu=False):
         self.use_gpu = use_gpu
@@ -67,6 +68,7 @@ class FaissIVFPQ(FaissIVF):
 
     def _get_index(self, n, d):
         return faiss.IndexIVFPQ(faiss.IndexFlatL2(d), d, int(np.sqrt(n)), 8, 8)
+
 
 class PytorchNN:
     def __init__(self, batch_size=256, alpha=1, use_gpu=False):
@@ -150,7 +152,6 @@ def get_vectors_from_img(path):
     return vecs
 
 
-
 def test_ann_accuracy(n=10):
     """Compute the accuracy of various aproximate Faiss nearest neighbor methods compared with exact NN on real images"""
     # exact_NN = FaissFlat(use_gpu=True, n_first=1)
@@ -161,7 +162,6 @@ def test_ann_accuracy(n=10):
         FaissIVFPQ(nprobe=1, n_first=n, use_gpu=True),
         # FaissIVFPQ(nprobe=10, n_first=10, use_gpu=True),
     ]
-
 
     recall_1s = []
     recall_ns = []
@@ -237,4 +237,4 @@ if __name__ == '__main__':
     n_reps = 1
 
     test_ann_accuracy()
-    # produce_timing_table()
+    produce_timing_table()

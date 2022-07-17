@@ -26,12 +26,12 @@ def generate(reference_images,
 
     reference_images = reference_images.to(device)
     synthesized_images = get_fist_initial_guess(reference_images, init_from, additive_noise_sigma).to(device)
-    initial_image_shape = synthesized_images.shape[-2:]
+    original_image_shape = synthesized_images.shape[-2:]
 
     for scale in pyramid_scales:
         pbar.new_lvl()
         lvl_references = tv_resize(scale, antialias=True)(reference_images)
-        lvl_output_shape = get_output_shape(initial_image_shape, scale, aspect_ratio)
+        lvl_output_shape = get_output_shape(original_image_shape, scale, aspect_ratio)
         synthesized_images = tv_resize(lvl_output_shape, antialias=True)(synthesized_images)
 
         synthesized_images = _match_patch_distributions(synthesized_images, lvl_references, criteria, num_steps, lr,
