@@ -30,14 +30,14 @@ def generate(reference_images,
 
     for scale in pyramid_scales:
         pbar.new_lvl()
-        lvl_references = tv_resize(scale)(reference_images)
+        lvl_references = tv_resize(scale, antialias=True)(reference_images)
         lvl_output_shape = get_output_shape(initial_image_shape, scale, aspect_ratio)
-        synthesized_images = tv_resize(lvl_output_shape)(synthesized_images)
+        synthesized_images = tv_resize(lvl_output_shape, antialias=True)(synthesized_images)
 
         synthesized_images = _match_patch_distributions(synthesized_images, lvl_references, criteria, num_steps, lr,
                                                         pbar, debug_dir)
         # Decrease learning rate
-        lr *= 0.9
+        # lr *= 0.9
 
         if debug_dir:
             save_image(lvl_references, os.path.join(debug_dir, f'references-lvl-{pbar.lvl}.png'), normalize=True)
@@ -113,6 +113,7 @@ def get_fist_initial_guess(reference_images, init_from, additive_noise_sigma):
         raise ValueError("Bad init mode", init_from)
     if additive_noise_sigma:
         synthesized_images += torch.randn_like(synthesized_images) * additive_noise_sigma
+
     return synthesized_images
 
 

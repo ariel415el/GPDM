@@ -143,44 +143,65 @@ def measure_funtion_call_time(func, X, Y, *args):
     return np.mean(times), np.std(times)
 
 
-def get_vectors_from_img(path, resize):
-    img = cv2.imread(path)
-    img = cv2.resize(img, (resize, resize))[None, :]
+def get_vectors_from_img(path):
+    img = cv2.imread(path)[None, :]
     unfold = torch.nn.Unfold(kernel_size=p, stride=1)
     vecs = unfold(torch.from_numpy(img).float().permute(0,3,1,2))[0].T
     return vecs
 
 
-def compute_ann_accuracy(resize=256):
+
+def test_ann_accuracy(n=10):
     """Compute the accuracy of various aproximate Faiss nearest neighbor methods compared with exact NN on real images"""
     # exact_NN = FaissFlat(use_gpu=True, n_first=1)
     exact_NN = PytorchNN(use_gpu=True)
     Aproximagte_NNs = [
-        FaissIVF(nprobe=1, n_first=10, use_gpu=True),
+        FaissIVF(nprobe=1, n_first=n, use_gpu=True),
         # FaissIVF(nprobe=10, n_first=10, use_gpu=True),
-        FaissIVFPQ(nprobe=1, n_first=10, use_gpu=True),
+        FaissIVFPQ(nprobe=1, n_first=n, use_gpu=True),
         # FaissIVFPQ(nprobe=10, n_first=10, use_gpu=True),
     ]
 
-    X = get_vectors_from_img('../images/Places50/1.jpg', resize=resize)
-    Y = get_vectors_from_img('../images/Places50/2.jpg', resize=resize)
-    n, d = X.shape
-    exact_nn = exact_NN(X, Y)
 
-    table = pd.DataFrame()
+    recall_1s = []
+    recall_ns = []
+    dist_overheads_false= []
+
     for ANN in Aproximagte_NNs:
+        table = pd.DataFrame()
+        for i in range(1, 17):
 
-        ann, I = ANN(X, Y)
+            X = get_vectors_from_img(f'../images/SIGD16/{i}.jpg')
 
-        recall = np.sum(ann == exact_nn) / exact_nn.shape[0]
-        n_recall = np.sum([exact_nn[i] in I[i] for i in range(n)]) / exact_nn.shape[0]
-        nn_dists = ((X - Y[exact_nn])**2).sum(1).mean().item()
-        ann_dists = ((X - Y[ann])**2).sum(1).mean().item()
+            # Split image patches into two random sets
+            choice = np.random.choice(range(X.shape[0]), size=(X.shape[0]//2,), replace=False)
+            ind = np.zeros(X.shape[0], dtype=bool)
+            ind[choice] = True
+            Y = X[ind]
+            X = X[~ind]
+
+            n, d = X.shape
+            exact_nn = exact_NN(X, Y)
+
+            ann, I = ANN(X, Y)
+
+            recall = np.sum(ann == exact_nn) / exact_nn.shape[0]
+            recall_n = np.sum([exact_nn[i] in I[i] for i in range(n)]) / exact_nn.shape[0]
+
+            nn_dists = ((X - Y[exact_nn])**2)[ann != exact_nn].sum(1).mean().item()
+            ann_dists = ((X - Y[ann])**2)[ann != exact_nn].sum(1).mean().item()
+            dist_overhead_false = ann_dists / nn_dists
+
+
+
+            recall_1s.append(recall)
+            recall_ns.append(recall_n)
+            dist_overheads_false.append(dist_overhead_false)
 
         column = {
-            'Recall-1': recall,
-            'Recall-10': n_recall,
-            'ANN-distance over NN-distance': f"{ann_dists / nn_dists * 100 - 100:.0f} %",
+            'Recall-1': f"{np.mean(recall_1s):.2f} +- {np.std(recall_1s)}",
+            f'Recall-{n}': f"{np.mean(recall_ns):.2f} +- {np.std(recall_ns)}",
+            'ANN-distance over NN-distance (False-only)': f"{np.mean(dist_overheads_false):.2f} +- {np.std(dist_overheads_false)}",
         }
 
         table[ANN.name] = pd.Series(column)
@@ -215,5 +236,5 @@ if __name__ == '__main__':
     p = 8
     n_reps = 1
 
-    # compute_ann_accuracy()
-    produce_timing_table()
+    test_ann_accuracy()
+    # produce_timing_table()
