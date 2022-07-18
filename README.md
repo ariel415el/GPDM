@@ -31,7 +31,7 @@ Output:
 
 ###  Style transfer
 `$ python3 main.py data/images/style_transfer/style/mondrian.jpg --init_from data/images/style_transfer/content/trump.jpg
---fine_dim 1024 --coarse_dim 512 --lr 0.035`
+--fine_dim 1024 --coarse_dim 256 --noise_sigma 0`
 
 Output:
 

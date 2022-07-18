@@ -20,7 +20,9 @@ parser.add_argument('--num_proj', type=int, default=64, help="Number of random p
 # Pyramids parameters
 parser.add_argument('--fine_dim', type=int, default=None, help="Height of the largest ptramid scale (can be used to get smaller output)."
                                                      "If None use the target_image height")
-parser.add_argument('--coarse_dim', type=int, default=21, help="Height of the smallest pyramid scale, ")
+parser.add_argument('--coarse_dim', type=int, default=21, help="Height of the smallest pyramid scale, When starting from noise,"
+                                                               " bigger coarse dim lets the images outputs go more cahotic (coarse_dim==~patch_size) "
+                                                               "will probably output a copyof the input")
 parser.add_argument('--pyr_factor', type=float, default=0.85, help="Downscale factor of the pyramid")
 parser.add_argument('--AR_height', type=float, default=1., help="Controls the aspect ratio of the result: factor of height")
 parser.add_argument('--AR_width', type=float, default=1., help="Controls the aspect ratio of the result: factor of width")

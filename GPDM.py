@@ -36,8 +36,6 @@ def generate(reference_images,
 
         synthesized_images = _match_patch_distributions(synthesized_images, lvl_references, criteria, num_steps, lr,
                                                         pbar, debug_dir)
-        # Decrease learning rate
-        # lr *= 0.9
 
         if debug_dir:
             save_image(lvl_references, os.path.join(debug_dir, f'references-lvl-{pbar.lvl}.png'), normalize=True)
@@ -106,6 +104,8 @@ def get_fist_initial_guess(reference_images, init_from, additive_noise_sigma):
         synthesized_images = torch.zeros_like(reference_images)
     elif init_from == "target":
         synthesized_images = reference_images.clone()
+        import torchvision
+        synthesized_images = torchvision.transforms.GaussianBlur(7, sigma=7)(synthesized_images)
     elif os.path.exists(init_from):
         synthesized_images = load_image(init_from)
         synthesized_images = synthesized_images.repeat(reference_images.shape[0], 1, 1, 1)
