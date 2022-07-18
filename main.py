@@ -18,14 +18,16 @@ parser.add_argument('--stride', type=int, default=1)
 parser.add_argument('--num_proj', type=int, default=64, help="Number of random projections used to approximate SWD")
 
 # Pyramids parameters
-parser.add_argument('--fine_dim', type=int, default=None, help="Height of the largest ptramid scale (can be used to get smaller output)."
-                                                     "If None use the target_image height")
-parser.add_argument('--coarse_dim', type=int, default=21, help="Height of the smallest pyramid scale, When starting from noise,"
-                                                               " bigger coarse dim lets the images outputs go more cahotic (coarse_dim==~patch_size) "
-                                                               "will probably output a copyof the input")
+parser.add_argument('--fine_dim', type=int, default=None,
+                    help="Height of the largest ptramid scale (can be used to get smaller output)."
+                    "If None use the target_image height")
+parser.add_argument('--coarse_dim', type=int, default=21,
+                    help="Height of the smallest pyramid scale, When starting from noise,"
+                    " bigger coarse dim lets the images outputs go more diverse (coarse_dim==~patch_size) "
+                    "will probably output a copy the input")
 parser.add_argument('--pyr_factor', type=float, default=0.85, help="Downscale factor of the pyramid")
-parser.add_argument('--AR_height', type=float, default=1., help="Controls the aspect ratio of the result: factor of height")
-parser.add_argument('--AR_width', type=float, default=1., help="Controls the aspect ratio of the result: factor of width")
+parser.add_argument('--height_factor', type=float, default=1., help="Controls the aspect ratio of the result: factor of height")
+parser.add_argument('--width_factor', type=float, default=1., help="Controls the aspect ratio of the result: factor of width")
 
 # GPDM parameters
 parser.add_argument('--init_from', default='zeros', help="Defines the intial guess for the first level. Can one of ('zeros', 'target', '<path-to-image>')")
@@ -46,10 +48,11 @@ if __name__ == '__main__':
 
     new_iamges = GPDM.generate(refernce_images, criteria,
                                pyramid_scales=get_pyramid_scales(fine_dim, args.coarse_dim, args.pyr_factor),
-                               aspect_ratio=(args.AR_height, args.AR_width),
+                               aspect_ratio=(args.height_factor, args.width_factor),
                                init_from=args.init_from,
                                lr=args.lr,
                                num_steps=args.num_steps,
-                               additive_noise_sigma=args.noise_sigma
+                               additive_noise_sigma=args.noise_sigma,
+                               debug_dir=args.debug_dir
     )
     dump_images(new_iamges, join(args.output_dir, basename(args.target_image)))

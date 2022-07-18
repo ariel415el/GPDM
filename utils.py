@@ -35,7 +35,6 @@ def get_pyramid_scales(max_height, min_height, step):
     return scales[::-1]
 
 
-
 def cv2pt(img):
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     img = img.astype(np.float64) / 255.

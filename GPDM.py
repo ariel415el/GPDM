@@ -21,6 +21,8 @@ def generate(reference_images,
     Run the GPDM model to generate an image/s with a similar patch distribution to reference_images/s with a given criteria.
     This manages the coarse to fine optimization steps.
     """
+    if debug_dir:
+        os.makedirs(debug_dir, exist_ok=True)
     pbar = GPDMLogger(num_steps, len(pyramid_scales))
     criteria = criteria.to(device)
 

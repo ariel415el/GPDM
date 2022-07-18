@@ -15,34 +15,35 @@ Accepted to [ECCV 2022](https://eccv2022.ecva.net/)
 ### Reshuffling
 `$  python3 main.py data/images/SIGD16/7.jpg`
 
-
-Output:
-
-<img src="Readme_images/reshuffle.png" alt="drawing" width="150"/>
+| Input                                            | Output                                               |
+|--------------------------------------------------|------------------------------------------------------| 
+| <img src=data/images/SIGD16/7.jpg height="150"/> | <img src="Readme_images/reshuffle.png" height="150"/> |  
 
 
 ### Retargeting
-`$ python3 main.py data/images/SIGD16/4.jpg --init_from target --AR_width 1.5`
+`$ python3 main.py data/images/SIGD16/4.jpg --init_from target --width_factor 1.5`
 
-Output:
-
-<img src="Readme_images/retarget.png" alt="drawing" width="300"/>
+| Input                                            | Output                                               |
+|--------------------------------------------------|------------------------------------------------------| 
+| <img src=data/images/SIGD16/4.jpg height="150"/> | <img src="Readme_images/retarget.png" height="150"/> |  
 
 
 ###  Style transfer
 `$ python3 main.py data/images/style_transfer/style/mondrian.jpg --init_from data/images/style_transfer/content/trump.jpg
 --fine_dim 1024 --coarse_dim 256 --noise_sigma 0`
 
-Output:
+| Input                                                                 | init_from                                                 | Output                                                     |
+|-----------------------------------------------------------------------|-----------------------------------------------------------|------------------------------------------------------------| 
+| <img src="data/images/style_transfer/style/mondrian.jpg" height="200"/> | <img src=data/images/style_transfer/content/trump.jpg height="200"/> | <img src="Readme_images/style_transfer.png" height="200"/> |  
 
-<img src="Readme_images/style_transfer.png" alt="drawing" width="200"/>
 
 
 ###  Texture synthesis
-`$ python3 main.py data/images/textures/cobbles.jpeg --AR_width 1.5 --AR_height 1.5`
-Output:
+`$ python3 main.py data/images/textures/cobbles.jpeg --width_factor 1.5 --height_factor 1.5`
 
-<img src="Readme_images/texture_synthesis.png" alt="drawing" width="150"/>
+| Input                                                     | Output                                                            |
+|-----------------------------------------------------------|-------------------------------------------------------------------| 
+| <img src=data/images/textures/cobbles.jpeg height="100"/> | <img src="Readme_images/texture_synthesis.png" height="150"/> |  
 
 
 # Reproduce paper tables
