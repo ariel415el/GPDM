@@ -4,7 +4,7 @@ from torchvision.utils import save_image
 from tqdm import tqdm
 import torch
 from torchvision.transforms import Resize as tv_resize
-from utils import plot_loss, load_image
+from utils import plot_loss, load_image, HistPlotter
 
 
 def generate(reference_images,
@@ -23,31 +23,34 @@ def generate(reference_images,
     """
     if debug_dir:
         os.makedirs(debug_dir, exist_ok=True)
+
     pbar = GPDMLogger(num_steps, len(pyramid_scales))
+
     criteria = criteria.to(device)
 
     reference_images = reference_images.to(device)
     synthesized_images = get_fist_initial_guess(reference_images, init_from, additive_noise_sigma).to(device)
     original_image_shape = synthesized_images.shape[-2:]
-
+    all_losses = []
     for scale in pyramid_scales:
         pbar.new_lvl()
         lvl_references = tv_resize(scale, antialias=True)(reference_images)
         lvl_output_shape = get_output_shape(original_image_shape, scale, aspect_ratio)
         synthesized_images = tv_resize(lvl_output_shape, antialias=True)(synthesized_images)
 
-        synthesized_images = _match_patch_distributions(synthesized_images, lvl_references, criteria, num_steps, lr,
-                                                        pbar, debug_dir)
+        synthesized_images, losses = _match_patch_distributions(synthesized_images, lvl_references, criteria, num_steps, lr, pbar)
+        all_losses += losses
 
         if debug_dir:
             save_image(lvl_references, os.path.join(debug_dir, f'references-lvl-{pbar.lvl}.png'), normalize=True)
             save_image(synthesized_images, os.path.join(debug_dir, f'outputs-lvl-{pbar.lvl}.png'), normalize=True)
+            plot_loss(all_losses, os.path.join(debug_dir, f'train_losses.png'))
 
     pbar.pbar.close()
     return synthesized_images
 
 
-def _match_patch_distributions(synthesized_images, reference_images, criteria, num_steps, lr, pbar, debug_dir=None):
+def _match_patch_distributions(synthesized_images, reference_images, criteria, num_steps, lr, pbar):
     """
     Minimizes criteria(synthesized_images, reference_images) for num_steps SGD steps by differentiating self.synthesized_images
     :param reference_images: tensor of shape (b, C, H1, W1)
@@ -60,8 +63,7 @@ def _match_patch_distributions(synthesized_images, reference_images, criteria, n
     for i in range(num_steps):
         # Optimize image
         optim.zero_grad()
-        batch_indices = torch.randperm(len(reference_images))
-        loss = criteria(synthesized_images, reference_images[batch_indices])
+        loss = criteria(synthesized_images, reference_images)
         loss.backward()
         optim.step()
 
@@ -70,11 +72,7 @@ def _match_patch_distributions(synthesized_images, reference_images, criteria, n
         pbar.step()
         pbar.print()
 
-    # write optimization debut images
-    if debug_dir:
-        plot_loss(losses, os.path.join(debug_dir, f'train_losses-lvl-{pbar.lvl}.png'))
-
-    return torch.clip(synthesized_images.detach(), -1, 1)
+    return torch.clip(synthesized_images.detach(), -1, 1), losses
 
 
 class GPDMLogger:
