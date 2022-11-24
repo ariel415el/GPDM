@@ -4,7 +4,7 @@ from torchvision.utils import save_image
 from tqdm import tqdm
 import torch
 from torchvision.transforms import Resize as tv_resize
-from utils import plot_loss, load_image, HistPlotter
+from utils import plot_loss, load_image
 
 
 def generate(reference_images,
