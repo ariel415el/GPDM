@@ -5,11 +5,11 @@ build:
     - "libgl1-mesa-glx"
     - "libglib2.0-0"
   python_packages:
-    - "torch==1.10.0"
+    - "torch==1.9.0"
     - "numpy==1.21.1"
-    - "torchvision==0.11.1"
+    - "torchvision==0.10.0"
     - "opencv-python==4.5.5.64"
     - "matplotlib==3.5.1"
     - "tqdm==4.63.1"
 
-predict: "scripts/cloud_demo.py:Predictor"
+predict: "cloud_demo/cloud_demo.py:Predictor"
