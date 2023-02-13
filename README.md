@@ -12,10 +12,11 @@ Accepted to [ECCV 2022](https://eccv2022.ecva.net/)
 
 ## Video presentation
 
-[![IMAGE ALT TEXT HERE](https://img.youtube.com/vi/_7gKxR6MVQU/0.jpg)](https://www.youtube.com/watch?v=_7gKxR6MVQU)
+<div align="center">
+  <a href="https://www.youtube.com/watch?v=_7gKxR6MVQU"><img src="https://img.youtube.com/vi/_7gKxR6MVQU/0.jpg" alt="IMAGE ALT TEXT"></a>
+</div>
 
-
-# Try out GPDM:
+# Run GPDM:
 
 ### Reshuffling
 
