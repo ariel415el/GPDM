@@ -64,10 +64,12 @@ In the images folder you can find images I collected from various repos and pape
 # Cite
 
 ```
-@article{elnekave2022generating,
+@inproceedings{elnekave2022generating,
   title={Generating natural images with direct Patch Distributions Matching},
   author={Elnekave, Ariel and Weiss, Yair},
-  journal={arXiv preprint arXiv:2203.11862},
-  year={2022}
+  booktitle={Computer Vision--ECCV 2022: 17th European Conference, Tel Aviv, Israel, October 23--27, 2022, Proceedings, Part XVII},
+  pages={544--560},
+  year={2022},
+  organization={Springer}
 }
 ```
