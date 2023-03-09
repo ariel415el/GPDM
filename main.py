@@ -3,7 +3,7 @@ import sys
 sys.path.append(dirname(dirname(abspath(__file__))))
 import GPDM
 from patch_swd import PatchSWDLoss
-from utils import load_image, dump_images, get_pyramid_scales
+from utils import read_data, dump_images, get_pyramid_scales, show_nns
 import argparse
 
 
@@ -11,8 +11,9 @@ def parse_args():
     # IO
     parser = argparse.ArgumentParser(description='Run GPDM')
     parser.add_argument('target_image', help="This image has the reference patch distribution to be matched")
-    parser.add_argument('--output_dir', default="Outputs", help="Where to put the results")
+    parser.add_argument('--output_dir', default="outputs", help="Where to put the results")
     parser.add_argument('--debug', action='store_true', default=False, help="Dumpp debug images")
+    parser.add_argument('--device', default="cuda:0")
 
     # SWD parameters
     parser.add_argument('--patch_size', type=int, default=7)
@@ -39,7 +40,7 @@ def parse_args():
     parser.add_argument('--lr', type=float, default=0.01, help="Adam learning rate for the optimization")
     parser.add_argument('--num_steps', type=int, default=300, help="Number of Adam steps")
     parser.add_argument('--noise_sigma', type=float, default=1.5, help="Std of noise added to the first initial image")
-    parser.add_argument('--num_images', type=int, default=1,
+    parser.add_argument('--num_outputs', type=int, default=1,
                         help="If > 1, batched inference is used (see paper) and multiple images are generated")
 
     return parser.parse_args()
@@ -48,20 +49,23 @@ def parse_args():
 if __name__ == '__main__':
     args = parse_args()
 
-    refernce_images = load_image(args.target_image).repeat(args.num_images, 1, 1, 1)
+    refernce_images = read_data(args.target_image)
 
-    criteria = PatchSWDLoss(patch_size=args.patch_size, stride=args.stride, num_proj=args.num_proj)
+    criteria = PatchSWDLoss(patch_size=args.patch_size, stride=args.stride, num_proj=args.num_proj, c=refernce_images.shape[1])
 
     fine_dim = args.fine_dim if args.fine_dim is not None else refernce_images.shape[-2]
 
     outputs_dir = join(args.output_dir, basename(args.target_image))
-    new_images = GPDM.generate(refernce_images, criteria,
+    new_images, last_lvl_references = GPDM.generate(refernce_images, criteria,
                                pyramid_scales=get_pyramid_scales(fine_dim, args.coarse_dim, args.pyr_factor),
                                aspect_ratio=(args.height_factor, args.width_factor),
                                init_from=args.init_from,
                                lr=args.lr,
                                num_steps=args.num_steps,
                                additive_noise_sigma=args.noise_sigma,
-                               debug_dir=f"{outputs_dir}/debug" if args.debug else None
+                               num_outputs=args.num_outputs,
+                               debug_dir=f"{outputs_dir}/debug" if args.debug else None,
+                               device=args.device
     )
     dump_images(new_images, outputs_dir)
+    show_nns(new_images, last_lvl_references, outputs_dir)

@@ -1,4 +1,5 @@
 import os
+from math import sqrt
 
 from torchvision.utils import save_image
 from tqdm import tqdm
@@ -9,13 +10,14 @@ from utils import plot_loss, load_image
 
 def generate(reference_images,
              criteria,
-             init_from: str = 'zeros',
+             init_from = 'zeros',
              pyramid_scales=(32, 64, 128, 256),
              lr: float = 0.01,
              num_steps: int = 300,
              aspect_ratio=(1, 1),
+             num_outputs=1,
              additive_noise_sigma=0.0,
-             device: str = 'cuda:0',
+             device: str = 'cuda:1',
              debug_dir=None):
     """
     Run the GPDM model to generate an image/s with a similar patch distribution to reference_images/s with a given criteria.
@@ -24,13 +26,19 @@ def generate(reference_images,
     if debug_dir:
         os.makedirs(debug_dir, exist_ok=True)
 
-    pbar = GPDMLogger(num_steps, len(pyramid_scales))
-
     criteria = criteria.to(device)
 
     reference_images = reference_images.to(device)
     synthesized_images = get_fist_initial_guess(reference_images, init_from, additive_noise_sigma).to(device)
+    synthesized_images = ensure_size(synthesized_images, num_outputs)
     original_image_shape = synthesized_images.shape[-2:]
+
+    print(f"Matching the patches of {len(synthesized_images)} generated images to the patches of {len(reference_images)} reference images")
+    pbar = GPDMLogger(num_steps, len(pyramid_scales))
+
+    if debug_dir:
+        nrow = int(sqrt(len(synthesized_images)))
+        save_image(synthesized_images, os.path.join(debug_dir, f'init.png'), normalize=True, nrow=nrow)
     all_losses = []
     for scale in pyramid_scales:
         pbar.new_lvl()
@@ -42,12 +50,12 @@ def generate(reference_images,
         all_losses += losses
 
         if debug_dir:
-            save_image(lvl_references, os.path.join(debug_dir, f'references-lvl-{pbar.lvl}.png'), normalize=True)
-            save_image(synthesized_images, os.path.join(debug_dir, f'outputs-lvl-{pbar.lvl}.png'), normalize=True)
+            save_image(lvl_references, os.path.join(debug_dir, f'references-lvl-{pbar.lvl}.png'), normalize=True, nrow=nrow)
+            save_image(synthesized_images, os.path.join(debug_dir, f'outputs-lvl-{pbar.lvl}.png'), normalize=True, nrow=nrow)
             plot_loss(all_losses, os.path.join(debug_dir, f'train_losses.png'))
 
     pbar.pbar.close()
-    return synthesized_images
+    return synthesized_images, lvl_references
 
 
 def _match_patch_distributions(synthesized_images, reference_images, criteria, num_steps, lr, pbar):
@@ -61,6 +69,7 @@ def _match_patch_distributions(synthesized_images, reference_images, criteria, n
     optim = torch.optim.Adam([synthesized_images], lr=lr)
     losses = []
     for i in range(num_steps):
+        criteria.init()
         # Optimize image
         optim.zero_grad()
         loss = criteria(synthesized_images, reference_images)
@@ -101,20 +110,29 @@ class GPDMLogger:
 
 def get_fist_initial_guess(reference_images, init_from, additive_noise_sigma):
     if init_from == "zeros":
-        synthesized_images = torch.zeros_like(reference_images)
+        synthesized_images = torch.zeros(1, *reference_images.shape[1:])
+    elif init_from == "mean":
+        synthesized_images = torch.mean(reference_images, dim=0, keepdim=True)
     elif init_from == "target":
         synthesized_images = reference_images.clone()
         import torchvision
         synthesized_images = torchvision.transforms.GaussianBlur(7, sigma=7)(synthesized_images)
+    # elif type(init_from) == torch.Tensor:
+    #     synthesized_images = init_from
     elif os.path.exists(init_from):
         synthesized_images = load_image(init_from)
-        synthesized_images = synthesized_images.repeat(reference_images.shape[0], 1, 1, 1)
     else:
         raise ValueError("Bad init mode", init_from)
     if additive_noise_sigma:
         synthesized_images += torch.randn_like(synthesized_images) * additive_noise_sigma
 
     return synthesized_images
+
+
+def ensure_size(batch, num_outputs):
+    if num_outputs > 1 and batch.shape[0] == 1:
+        batch = batch.repeat(num_outputs, 1, 1, 1)
+    return batch
 
 
 def get_output_shape(initial_image_shape, size, aspect_ratio):

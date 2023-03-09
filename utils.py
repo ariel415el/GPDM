@@ -19,6 +19,14 @@ def load_image(path):
     return img
 
 
+def read_data(path):
+    if os.path.isdir(path):
+        refernce_images = torch.cat([load_image(f'{path}/{x}') for x in os.listdir(path)], dim=0)
+    else:
+        refernce_images = load_image(path)
+    return refernce_images
+
+
 def dump_images(images, out_dir):
     if os.path.exists(out_dir):
         i = len(os.listdir(out_dir))
@@ -33,11 +41,10 @@ def show_nns(images, ref_images, out_dir):
     nn_indices = []
     for i in range(len(images)):
         dists = torch.mean((ref_images - images[i].unsqueeze(0))**2, dim=(1,2,3))
-        j = dists.argmin()
+        j = dists.argmin().item()
         nn_indices.append(j)
-
-    debug_image = torch.cat([images, ref_images[nn_indices]], dim=0)
-    save_image(debug_image, os.path.join(out_dir, f"NNs.png"), normalize=True, nrow=len(ref_images))
+    debug_image = torch.cat([images, ref_images[nn_indices] ], dim=0)
+    save_image(debug_image, os.path.join(out_dir, f"NNs.png"), normalize=True, nrow=len(images))
 
 
 def get_pyramid_scales(max_height, min_height, step):
