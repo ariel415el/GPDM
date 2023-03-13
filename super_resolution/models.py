@@ -35,29 +35,31 @@ class DirectSWD:
 
         return self.match_patch_distributions(init_image)
 
-    def match_patch_distributions(self, synthesized_images):
-        synthesized_images.requires_grad_(True)
-        optim = torch.optim.Adam([synthesized_images], lr=self.lr)
+    def match_patch_distributions(self, synthesized_image):
+        synthesized_image.requires_grad_(True)
+        optim = torch.optim.Adam([synthesized_image], lr=self.lr)
         losses = []
         pbar = tqdm(range(self.num_steps))
         for _ in pbar:
             if self.mode == "Resample":
                 self.criteria.init()
             optim.zero_grad()
-            loss = self.criteria(synthesized_images, self.ref_image)
+            loss = self.criteria(synthesized_image, self.ref_image)
             loss.backward()
             if self.gradient_projector is not None:
-                    synthesized_images.grad = self.gradient_projector(synthesized_images.grad)
+                    # synthesized_image = self.gradient_projector(synthesized_image)
+                synthesized_image = self.gradient_projector(synthesized_image)
+
             optim.step()
 
             losses.append(loss.item())
             pbar.set_description(f"Loss: {loss.item()}")
 
-        synthesized_images = torch.clip(synthesized_images.detach(), -1, 1)
-        return synthesized_images, losses
+        synthesized_image = torch.clip(synthesized_image.detach(), -1, 1)
+        return synthesized_image, losses
 
     @staticmethod
-    def optimize_directions(synthesized_images, reference_images, criteria, num_steps=300, lr=0.001):
+    def optimize_directions(synthesized_image, reference_images, criteria, num_steps=300, lr=0.001):
         criteria.rand.requires_grad_(True)
         optim = torch.optim.Adam([criteria.rand], lr=lr)
         losses = []
@@ -65,7 +67,7 @@ class DirectSWD:
         for i in pbar:
             # Optimize image
             optim.zero_grad()
-            loss = -criteria(synthesized_images, reference_images)
+            loss = -criteria(synthesized_image, reference_images)
             loss.backward()
             optim.step()
             losses.append(loss.item())
@@ -121,25 +123,28 @@ class GMMSWD:
             optim.zero_grad()
             loss = self.loss(synthesized_image)
             loss.backward()
-            if self.gradient_projector is not None:
-                    synthesized_image.grad = self.gradient_projector(synthesized_image.grad)
             optim.step()
+            if self.gradient_projector is not None:
+            #         synthesized_image.grad = self.gradient_projector(synthesized_image.grad)
+                synthesized_image = self.gradient_projector(synthesized_image)
 
             losses.append(loss.item())
             pbar.set_description(f"Loss: {loss.item()}")
 
-        synthesized_images = torch.clip(synthesized_image.detach(), -1, 1)
-        return synthesized_images, losses
+        synthesized_image = torch.clip(synthesized_image.detach(), -1, 1)
+        return synthesized_image, losses
 
 
-class gradient_projector:
-    def __init__(self, low_dim, high_dim, resize_kwargs):
-        self.low_dim = low_dim
-        self.resize_kwargs = resize_kwargs
-        self.high_dim = high_dim
-
-    def __call__(self, grad):
-        with torch.no_grad():
-            grad_down = Resize(self.low_dim, **self.resize_kwargs)(grad)
-            grad -= Resize(self.high_dim, **self.resize_kwargs)(grad_down)
-            return grad
+class GD_gradient_projector:
+    def __init__(self, corrupt_image, operator, n_steps=100, lr=0.0001):
+        self.corrupt_image = corrupt_image
+        self.operator = operator
+        self.n_steps = n_steps
+        self.lr = lr
+    def __call__(self, im):
+        optim = torch.optim.Adam([im], lr=self.lr)
+        for i in range(self.n_steps):
+            loss = ((self.operator(im) - self.corrupt_image)**2).mean()
+            loss.backward()
+            optim.step()
+        return im

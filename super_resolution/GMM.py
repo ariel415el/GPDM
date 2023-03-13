@@ -48,6 +48,7 @@ class GMMnD:
         self.pi = torch.from_numpy(gmm.weights_).to(data.device)
         self.mu = torch.from_numpy(gmm.means_).to(data.device)
         self.sigma = torch.sqrt(torch.from_numpy(gmm.covariances_)).to(data.device)
+        print("Done")
 
     def sample(self, n):
         indices = torch.multinomial(self.pi, n, replacement=True)
