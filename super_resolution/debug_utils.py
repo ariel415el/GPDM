@@ -54,7 +54,7 @@ def plot_values(val_dict, path):
 
 
 if __name__ == '__main__':
-    device = torch.device("cuda")
+    device = torch.device("cpu")
     im_size = 512
     im1 = load_image('/cs/labs/yweiss/ariel1/data/afhq/train/wild/flickr_wild_000065.jpg').to(device)
     im2 = load_image('/cs/labs/yweiss/ariel1/data/afhq/train/wild/flickr_wild_000066.jpg').to(device)
@@ -62,4 +62,4 @@ if __name__ == '__main__':
     im2 = Resize(im_size, antialias=True)(im2)
     im1_low_res = Resize(im_size//4, antialias=True)(im1)
 
-    # plot_projections_histogram_on_top({"im1": im1, "im2": im2, "im1_low_res": im1_low_res}, f"hists.png")
+    dump_hists(im1, im1_low_res, {'im2': im2, "im1":im1}, "asd.png")

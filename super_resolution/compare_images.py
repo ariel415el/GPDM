@@ -5,13 +5,13 @@ import numpy as np
 from PIL import Image
 from matplotlib import pyplot as plt
 
-from super_resolution.metrics import calculate_psnr, calculate_ssim, LapSWD
+from metrics import calculate_psnr, calculate_ssim, LapSWD
 
 if __name__ == '__main__':
     s = 3
-    bbox_dict = defaultdict(lambda x: ((0.5, 0.5, 0.125), (0.5, 0.125, 0.125), (0.125, 0.5, 0.125)))
+    bbox_dict = defaultdict(lambda : ((0.5, 0.5, 0.125), (0.5, 0.125, 0.125), (0.125, 0.5, 0.125)))
     bbox_dict["fox"] = [(0.5, 0.5, 0.125), (0.5, 0.125, 0.125), (0.125, 0.5, 0.125)]
-    bbox_dict["00130"] =  [(0.5, 0.5, 0.125), (0.5, 0.7, 0.125), (0.75, 0.5, 0.125)]
+    bbox_dict["00130"] = [(0.5, 0.5, 0.125), (0.5, 0.7, 0.125), (0.75, 0.5, 0.125)]
 
     dirpath = "outputs"
     for dirname in os.listdir("outputs"):

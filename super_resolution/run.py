@@ -86,7 +86,7 @@ if __name__ == '__main__':
         # GMMSWD(refernce_image, p=args.p, s=args.s, mode="Fixed", num_steps=args.num_steps, n_components=5, n_proj=args.n_proj, name="PGD",
         #        gradient_projector=None),
         #
-        # DirectSWD(refernce_image, p=args.p, s=args.s, mode="Resample", num_steps=args.num_steps, n_proj=args.n_proj),
+        DirectSWD(refernce_image, p=args.p, s=args.s, mode="Resample", num_steps=args.num_steps, n_proj=args.n_proj),
         # DirectSWD(refernce_image, p=args.p, s=args.s, mode="Resample", num_steps=args.num_steps, n_proj=args.n_proj, name='PGD',
         #           gradient_projector=gradient_projector),
         #
