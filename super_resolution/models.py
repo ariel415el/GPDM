@@ -1,10 +1,9 @@
-from sklearn.mixture import GaussianMixture
-from torchvision.transforms import Resize
 from tqdm import tqdm
 import os
 import sys
 
-from super_resolution.GMM import GMM1D, GMMnD
+from super_resolution.GMM import GMMnD
+from super_resolution.gabor import get_naive_kernels
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
@@ -29,57 +28,24 @@ class DirectSWD:
         self.gradient_projector = gradient_projector
         self.criteria = PatchSWDLoss(patch_size=self.p, stride=self.s, num_proj=self.n_proj, c=self.ref_image.shape[1])
 
+    def loss(self, image):
+        return self.criteria(image, self.ref_image)
+
     def run(self, init_image):
-        if self.mode == "Fixed-opt":
-            DirectSWD.optimize_directions(init_image, self.ref_image, self.criteria, num_steps=self.num_steps, lr=self.lr)
+        return match_patch_distributions(init_image, self.loss, self.num_steps, self.lr, self.gradient_projector)
 
-        return self.match_patch_distributions(init_image)
+class predefinedDirectSWD(DirectSWD):
+    def __init__(self, ref_image, p=5, s=1, n_proj=64, num_steps=500, lr=0.001, name=None):
+        super(predefinedDirectSWD, self).__init__(ref_image, p, s, n_proj, mode="Fixed", num_steps=num_steps, lr=lr, name=name)
+        self.criteria.rand = get_naive_kernels(self.p).to(self.criteria.rand.device).float()
+        self.p = self.criteria.p = self.criteria.rand.shape[-1]
+        self.n_proj = self.criteria.num_proj = self.criteria.rand.shape[0]
+        self.name = "Predefined" + self.name
 
-    def match_patch_distributions(self, synthesized_image):
-        synthesized_image.requires_grad_(True)
-        optim = torch.optim.Adam([synthesized_image], lr=self.lr)
-        losses = []
-        pbar = tqdm(range(self.num_steps))
-        for _ in pbar:
-            if self.mode == "Resample":
-                self.criteria.init()
-            optim.zero_grad()
-            loss = self.criteria(synthesized_image, self.ref_image)
-            loss.backward()
-            if self.gradient_projector is not None:
-                    # synthesized_image = self.gradient_projector(synthesized_image)
-                synthesized_image = self.gradient_projector(synthesized_image)
-
-            optim.step()
-
-            losses.append(loss.item())
-            pbar.set_description(f"Loss: {loss.item()}")
-
-        synthesized_image = torch.clip(synthesized_image.detach(), -1, 1)
-        return synthesized_image, losses
-
-    @staticmethod
-    def optimize_directions(synthesized_image, reference_images, criteria, num_steps=300, lr=0.001):
-        criteria.rand.requires_grad_(True)
-        optim = torch.optim.Adam([criteria.rand], lr=lr)
-        losses = []
-        pbar = tqdm(range(num_steps))
-        for i in pbar:
-            # Optimize image
-            optim.zero_grad()
-            loss = -criteria(synthesized_image, reference_images)
-            loss.backward()
-            optim.step()
-            losses.append(loss.item())
-            # Update staus
-            pbar.set_description(f"Loss: {loss.item()}")
-
-        return losses
-
-
-class GMMSWD:
+class GMMSWD(DirectSWD):
     def __init__(self, ref_image, p=5, s=1, n_proj=64, num_steps=500, lr=0.001, n_components=5, mode="Fixed",
                  gradient_projector=None, name=None):
+        super().__init__(self)
         self.name = f"{mode}_{n_components}-GMM-{n_proj}-{p}x{s}"
         if name is not None:
             self.name += "_" +name
@@ -111,28 +77,7 @@ class GMMSWD:
         return loss
 
     def run(self, init_image):
-        return self.match_patch_distributions(init_image)
-
-    def match_patch_distributions(self, synthesized_image):
-        synthesized_image.requires_grad_(True)
-        optim = torch.optim.Adam([synthesized_image], lr=self.lr)
-        losses = []
-
-        pbar = tqdm(range(self.num_steps))
-        for _ in pbar:
-            optim.zero_grad()
-            loss = self.loss(synthesized_image)
-            loss.backward()
-            optim.step()
-            if self.gradient_projector is not None:
-            #         synthesized_image.grad = self.gradient_projector(synthesized_image.grad)
-                synthesized_image = self.gradient_projector(synthesized_image)
-
-            losses.append(loss.item())
-            pbar.set_description(f"Loss: {loss.item()}")
-
-        synthesized_image = torch.clip(synthesized_image.detach(), -1, 1)
-        return synthesized_image, losses
+        return match_patch_distributions(init_image, self.loss, self.num_steps, self.lr, self.gradient_projector)
 
 
 class GD_gradient_projector:
@@ -148,3 +93,25 @@ class GD_gradient_projector:
             loss.backward()
             optim.step()
         return im
+
+
+def match_patch_distributions(synthesized_image, loss_func, num_steps, lr, gradient_projector):
+    synthesized_image.requires_grad_(True)
+    optim = torch.optim.Adam([synthesized_image], lr=lr)
+    losses = []
+
+    pbar = tqdm(range(num_steps))
+    for _ in pbar:
+        optim.zero_grad()
+        loss = loss_func(synthesized_image)
+        loss.backward()
+        optim.step()
+        if gradient_projector is not None:
+            #         synthesized_image.grad = self.gradient_projector(synthesized_image.grad)
+            synthesized_image = gradient_projector(synthesized_image)
+
+        losses.append(loss.item())
+        pbar.set_description(f"Loss: {loss.item()}")
+
+    synthesized_image = torch.clip(synthesized_image.detach(), -1, 1)
+    return synthesized_image, losses
