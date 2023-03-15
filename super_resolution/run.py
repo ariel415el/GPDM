@@ -2,10 +2,9 @@ import argparse
 import os
 
 import torch
-import torchvision
 from torchvision.utils import save_image
 
-from debug_utils import dump_hists, plot_values
+from sr_utils.debug_utils import dump_hists, plot_values
 from models import DirectSWD, GMMSWD, GD_gradient_projector, predefinedDirectSWD
 from utils import load_image
 
@@ -79,14 +78,16 @@ if __name__ == '__main__':
     gradient_projector = GD_gradient_projector(corrupt_image, operator)
     # Define models
     models = [
-        DirectSWD(refernce_image, p=args.p, s=args.s, mode='Fixed', num_steps=args.num_steps, n_proj=args.n_proj),
-        predefinedDirectSWD(refernce_image, p=args.p, s=args.s, num_steps=args.num_steps, n_proj=args.n_proj),
+        # DirectSWD(refernce_image, p=args.p, s=args.s, mode='Fixed', num_steps=args.num_steps, n_proj=args.n_proj),
+        # predefinedDirectSWD(refernce_image, p=args.p, s=args.s, num_steps=args.num_steps, n_proj=args.n_proj),
         # DirectSWD(refernce_image, p=args.p, s=args.s, mode='Fixed', num_steps=args.num_steps, n_proj=args.n_proj, name='PGD',
         #           gradient_projector=gradient_projector),
         # GMMSWD(refernce_image, p=args.p, s=args.s, mode="Fixed", num_steps=args.num_steps, n_components=5, n_proj=args.n_proj, name="PGD",
         #        gradient_projector=None),
         #
-        DirectSWD(refernce_image, p=args.p, s=args.s, mode="Resample", num_steps=args.num_steps, n_proj=args.n_proj),
+        DirectSWD(refernce_image, p=5, s=1, mode="Resample", num_steps=args.num_steps, n_proj=args.n_proj),
+        DirectSWD(refernce_image, p=9, s=1, mode="Resample", num_steps=args.num_steps, n_proj=args.n_proj),
+        DirectSWD(refernce_image, p=17, s=1, mode="Resample", num_steps=args.num_steps, n_proj=args.n_proj),
         # DirectSWD(refernce_image, p=args.p, s=args.s, mode="Resample", num_steps=args.num_steps, n_proj=args.n_proj, name='PGD',
         #           gradient_projector=gradient_projector),
         #

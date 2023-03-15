@@ -2,13 +2,12 @@ from tqdm import tqdm
 import os
 import sys
 
-from super_resolution.GMM import GMMnD
-from super_resolution.gabor import get_naive_kernels, get_fixed_kernels
-
-sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+from super_resolution.sr_utils.GMM import GMMnD
+from super_resolution.sr_utils.predefined_filters import get_naive_kernels, get_gabor_filters
 
 import torch
 import torch.nn.functional as F
+# sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 from patch_swd import PatchSWDLoss
 
 
@@ -38,7 +37,7 @@ class DirectSWD:
 class predefinedDirectSWD(DirectSWD):
     def __init__(self, ref_image, p=5, s=1, n_proj=64, num_steps=500, lr=0.001, name=None):
         super(predefinedDirectSWD, self).__init__(ref_image, p, s, n_proj, mode="Fixed", num_steps=num_steps, lr=lr, name=name)
-        self.criteria.rand = get_fixed_kernels(self.p).to(self.criteria.rand.device).float()
+        self.criteria.rand = get_gabor_filters(self.p).to(self.criteria.rand.device).float()
         self.p = self.criteria.p = self.criteria.rand.shape[-1]
         self.n_proj = self.criteria.num_proj = self.criteria.rand.shape[0]
         self.name = "Predefined" + self.name
