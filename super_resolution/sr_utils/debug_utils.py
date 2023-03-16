@@ -25,14 +25,16 @@ def plot_hists(ax, series, labels, nbins=100):
     ax.set_title(f"HistSWD: {compute_swd(*series):.4f}")
     ax.legend()
 
+
 def plot_img(axs, img, name):
     np_img = img.permute(1, 2, 0).numpy().copy()
     np_img -= np_img.min()
     np_img /= np_img.max()
     # img *= 255
-    im = axs.imshow(np_img)
+    axs.imshow(np_img)
     axs.set_title(f"{name}")
     axs.axis('off')
+
 
 def compute_swd(projx, projy):
     projx_pt = torch.from_numpy(projx).unsqueeze(0)

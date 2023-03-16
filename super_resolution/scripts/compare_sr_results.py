@@ -3,11 +3,25 @@ import sys
 from collections import defaultdict
 
 import numpy as np
+import torch
 from PIL import Image
 from matplotlib import pyplot as plt
+from torchvision.transforms import Resize
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
-from super_resolution.sr_utils.metrics import calculate_psnr, calculate_ssim, LapSWD
+from patch_swd import PatchSWDLoss
+from super_resolution.sr_utils.metrics import calculate_psnr, calculate_ssim
+
+
+def np_swd(x,y, lap=False):
+    x_ = torch.from_numpy(x).permute(2,0,1).unsqueeze(0).float()
+    y_ = torch.from_numpy(y).permute(2, 0, 1).unsqueeze(0).float()
+    if lap:
+        d = x_.shape[-1]
+        x_ = Resize(d, antialias=True)(Resize(d//2, antialias=True)(x_))
+        y_ = Resize(d, antialias=True)(Resize(d//2, antialias=True)(y_))
+    return PatchSWDLoss()(x_,y_)
+
 
 if __name__ == '__main__':
     s = 3
@@ -55,7 +69,8 @@ if __name__ == '__main__':
                 name = "GT"
             name += f"\nPSNR: {calculate_psnr(gt_img, img):.2f} " \
                     f"\nSSIM: {calculate_ssim(img, gt_img): .2f} " \
-                    f"\nLapSWD: {LapSWD()(img, gt_img):.2f}"
+                    f"\nSWD(7x1): {np_swd(img, gt_img):.2f}" \
+                    f"\nLapSWD(7x1): {np_swd(img, gt_img, lap=True):.2f}"
             axes[0, i].set_title(name, fontsize=5*s)
 
         plt.tight_layout()
