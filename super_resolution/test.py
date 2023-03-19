@@ -3,12 +3,12 @@ import os
 
 import torch
 from torchvision.utils import save_image
+from torchvision.transforms import Resize, CenterCrop, InterpolationMode
 
 from sr_utils.debug_utils import dump_hists, plot_values
 from models import DirectSWD, GMMSWD, GD_gradient_projector, predefinedDirectSWD, LapSWD, MSSWD
 from utils import load_image
 
-from torchvision.transforms import Resize, CenterCrop, InterpolationMode
 
 
 class DownsampleOperator:
@@ -49,7 +49,6 @@ if __name__ == '__main__':
     args = parser.parse_args()
     device = torch.device(args.device)
 
-
     # Parse inputs
     refernce_image = load_image(args.reference).to(device)
     if args.high_dim is not None:
@@ -59,7 +58,6 @@ if __name__ == '__main__':
 
     operator, op_name = DownsampleOperator(down_factor=4, high_dim=high_dim, antialias=True, interpolation=InterpolationMode.BICUBIC), "SRx4"
     # operator, op_name = NoiseOperator(noise_sigma=0.25), "Denoise"
-
 
     output_dir = "outputs/" + os.path.splitext(os.path.basename(args.reference))[0] + f"{op_name}_{high_dim}_p-{args.p}_s-{args.s}"
     os.makedirs(output_dir, exist_ok=True)
@@ -75,11 +73,32 @@ if __name__ == '__main__':
     gradient_projector = GD_gradient_projector(corrupt_image, operator, reg_weight=1)
     # Define models
     models = [
-        DirectSWD(refernce_image, p=8, s=4, mode="Resample", num_steps=args.num_steps, n_proj=args.n_proj),
-        DirectSWD(refernce_image, p=16, s=8, mode="Resample", num_steps=args.num_steps, n_proj=args.n_proj),
-        DirectSWD(refernce_image, p=32, s=16, mode="Resample", num_steps=args.num_steps, n_proj=args.n_proj),
-        DirectSWD(refernce_image, p=64, s=32, mode="Resample", num_steps=args.num_steps, n_proj=args.n_proj),
-        DirectSWD(refernce_image, p=128, s=64, mode="Resample", num_steps=args.num_steps, n_proj=args.n_proj),
+        # # Patch sizes
+        # DirectSWD(refernce_image, p=8, s=1, mode="Resample", num_steps=args.num_steps, n_proj=args.n_proj),
+        # DirectSWD(refernce_image, p=16, s=2, mode="Resample", num_steps=args.num_steps, n_proj=args.n_proj),
+        # DirectSWD(refernce_image, p=32, s=4, mode="Resample", num_steps=args.num_steps, n_proj=args.n_proj),
+
+        # # Lap vs RGB
+        # DirectSWD(refernce_image, p=5, s=1, mode="Resample", num_steps=args.num_steps, n_proj=args.n_proj),
+        # LapSWD(refernce_image, initial_guess, p=5, s=1, mode="Resample", num_steps=args.num_steps, n_proj=args.n_proj),
+        # LapSWD(refernce_image, initial_guess, p=5, s=1, mode="Resample", num_steps=args.num_steps, n_proj=args.n_proj,
+        #        gradient_projector=GD_gradient_projector(corrupt_image, operator), name="PGD")
+
+        # # PGD + PGD-reg
+        # DirectSWD(refernce_image, p=5, s=1, mode="Resample", num_steps=args.num_steps, n_proj=args.n_proj),
+        # DirectSWD(refernce_image, p=5, s=1, mode="Resample", num_steps=args.num_steps, n_proj=args.n_proj,
+        #           gradient_projector=GD_gradient_projector(corrupt_image, operator), name="PGD"),
+        # DirectSWD(refernce_image, p=5, s=1, mode="Resample", num_steps=args.num_steps, n_proj=args.n_proj,
+        #           gradient_projector=GD_gradient_projector(corrupt_image, operator, reg_weight=1), name="PGD-reg1"),
+
+        # Self
+        DirectSWD(corrupt_image, p=args.p, s=args.s, mode="Resample", num_steps=args.num_steps, n_proj=args.n_proj, name="self"),
+        DirectSWD(corrupt_image, p=args.p, s=args.s, mode="Resample", num_steps=args.num_steps, n_proj=args.n_proj, name="self-PGD",
+                  gradient_projector=gradient_projector),
+        DirectSWD(corrupt_image, p=args.p, s=args.s, mode="Resample", num_steps=args.num_steps, n_proj=args.n_proj, name="self-PGDreg",
+                  gradient_projector=GD_gradient_projector(corrupt_image, operator, reg_weight=1)),
+
+        # DirectSWD(refernce_image, p=128, s=64, mode="Resample", num_steps=args.num_steps, n_proj=args.n_proj),
         # DirectSWD(refernce_image, p=args.p, s=args.s, mode="Resample", num_steps=args.num_steps, n_proj=args.n_proj),
         # DirectSWD(refernce_image, p=args.p, s=args.s, mode="Resample", num_steps=args.num_steps, n_proj=args.n_proj,
         #           gradient_projector=gradient_projector, name="PGD"),
@@ -89,9 +108,9 @@ if __name__ == '__main__':
         #           gradient_projector=gradient_projector),
         # GMMSWD(refernce_image, p=args.p, s=args.s, mode="Fixed", num_steps=args.num_steps, n_components=5, n_proj=args.n_proj, name="PGD",
         #        gradient_projector=None),
-        MSSWD(refernce_image, ps=(8,16,32), s=8, mode="Resample", num_steps=args.num_steps, n_proj=args.n_proj),
-        MSSWD(refernce_image, ps=(32,64,128), s=4, mode="Resample", num_steps=args.num_steps, n_proj=args.n_proj),
-        # LapSWD(refernce_image, initial_guess, p=5, s=5, mode="Resample", num_steps=args.num_steps, n_proj=args.n_proj),
+        # MSSWD(refernce_image, ps=(8,16,32), s=8, mode="Resample", num_steps=args.num_steps, n_proj=args.n_proj),
+        # MSSWD(refernce_image, ps=(32,64,128), s=4, mode="Resample", num_steps=args.num_steps, n_proj=args.n_proj),
+
 
         # DirectSWD(refernce_image, p=9, s=1, mode="Resample", num_steps=args.num_steps, n_proj=args.n_proj),
         # DirectSWD(refernce_image, p=17, s=1, mode="Resample", num_steps=args.num_steps, n_proj=args.n_proj),
@@ -117,6 +136,5 @@ if __name__ == '__main__':
 
     dump_hists(refernce_image, corrupt_image, output_images, f"{output_dir}/4-hists.png")
     plot_values(loss_lists, f"{output_dir}/5-loss.png")
-
 
 

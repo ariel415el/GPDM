@@ -16,9 +16,9 @@ if __name__ == '__main__':
                         '--output_path', f'{os.path.join(os.path.dirname(img_path), "3-ESRGAN.png")}',
                         '--model_weights_path', f'{models_path}/ESRGAN_x4-DFO2K-25393df7.pth.tar'])
 
-        subprocess.run(['python3', f'{models_path}/Real_ESRGAN-PyTorch/inference.py', '--inputs_path', f'{img_path}',
-                        '--output_path', f'{os.path.join(os.path.dirname(img_path), "3-RESRGAN.png")}',
-                        '--model_weights_path', f'{models_path}/RealESRGAN_x4-DFO2K-678bf481.pth.tar'])
+        # subprocess.run(['python3', f'{models_path}/Real_ESRGAN-PyTorch/inference.py', '--inputs_path', f'{img_path}',
+        #                 '--output_path', f'{os.path.join(os.path.dirname(img_path), "3-RESRGAN.png")}',
+        #                 '--model_weights_path', f'{models_path}/RealESRGAN_x4-DFO2K-678bf481.pth.tar'])
 
         subprocess.run(['python3', f'{models_path}/pytorch-ZSSR/run_ZSSR_single_input.py', f'{img_path}', f'{os.path.join(os.path.dirname(img_path), "3-ZSSR.png")}'])
 

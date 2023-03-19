@@ -44,8 +44,10 @@ class predefinedDirectSWD(DirectSWD):
 
 
 class LapSWD(DirectSWD):
-    def __init__(self, ref_image, low_res_big, p=5, s=1, n_proj=64, mode="Resampled", num_steps=500, lr=0.001, name=None):
-        super(LapSWD, self).__init__(ref_image - low_res_big, p, s, n_proj, mode, num_steps=num_steps, lr=lr, name=name)
+    def __init__(self, ref_image, low_res_big, p=5, s=1, n_proj=64, mode="Resampled", num_steps=500, lr=0.001,
+                 gradient_projector=None, name=None):
+        super(LapSWD, self).__init__(ref_image - low_res_big, p, s, n_proj, mode, num_steps=num_steps, lr=lr,
+                                     gradient_projector=gradient_projector, name=name)
         self.name = "LapSWD" + self.name
         self.low_res_big = low_res_big
 
@@ -55,12 +57,8 @@ class LapSWD(DirectSWD):
     def run(self, init_image):
         d = init_image.shape[-1]
         from torchvision.transforms import Resize
-        from torchvision.utils import save_image
         init_image -= Resize(d, antialias=True)(Resize(d//4, antialias=True)(init_image))
-        save_image(init_image, "init.png", normalize=True)
-        save_image(self.ref_image, "ref.png", normalize=True)
         img, losses = match_patch_distributions(init_image, self.loss, self.num_steps, self.lr, self.gradient_projector)
-        save_image(img, "final.png", normalize=True)
         return self.low_res_big + img, losses
         # return img, losses
 
@@ -143,6 +141,7 @@ class GD_gradient_projector:
             loss.backward()
             optim.step()
         return im
+
 
 
 # class LaplacianSharpening:
