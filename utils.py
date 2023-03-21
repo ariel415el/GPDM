@@ -7,8 +7,10 @@ from matplotlib import pyplot as plt
 from torchvision.utils import save_image
 
 
-def load_image(path):
+def load_image(path, gray=False):
     img = np.array(Image.open(path))
+    if gray:
+        img = np.mean(img, axis=-1, keepdims=True)
     img = img - img.min()
     img = img / img.max()
     img = img * 2 - 1

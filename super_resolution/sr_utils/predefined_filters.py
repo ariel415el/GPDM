@@ -27,7 +27,7 @@ def gabor(sigma, theta, Lambda, psi, gamma):
     return gb
 
 
-def get_gabor_filters(dim):
+def get_gabor_filters(dim, c=3):
     filters = []
     factor = dim/5
     sigma = 1 * factor
@@ -42,7 +42,7 @@ def get_gabor_filters(dim):
                 # plt.show()
     filters = np.stack(filters)
     filters = torch.from_numpy(filters)[:, None]
-    filters = filters.repeat(1,3,1,1)
+    filters = filters.repeat(1,c,1,1)
     return normalize_filters(filters)
 
 
@@ -66,10 +66,10 @@ def get_naive_kernels(dim):
     return filters
 
 
-def get_random_filters(p, n=1):
-    rand = torch.randn(n, 3 * p ** 2)  # (slice_size**2*ch)
+def get_random_filters(p, n=1, c=3):
+    rand = torch.randn(n, c * p ** 2)  # (slice_size**2*ch)
     rand = rand / torch.norm(rand, dim=1, keepdim=True)  # noramlize to unit directions
-    rand = rand.reshape(n, 3, p, p)
+    rand = rand.reshape(n, c, p, p)
     rand /= torch.sum(rand, dim=(1,2,3), keepdim=True)
     return rand
 
@@ -91,6 +91,6 @@ def resize_filters(filters, p, factor, normalize=True):
 
 def appply_filter(image, rand):
     projx = torch.nn.functional.conv2d(image, rand.to(image.device).unsqueeze(0)).transpose(1, 0).reshape(-1)
-    projx = projx.cpu().numpy()
+    projx = projx.detach().cpu().numpy()
     return projx
 

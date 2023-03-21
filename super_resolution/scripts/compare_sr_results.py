@@ -10,29 +10,32 @@ from torchvision.transforms import Resize
 
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
+from utils import load_image
 from patch_swd import PatchSWDLoss
 from super_resolution.sr_utils.metrics import calculate_psnr, calculate_ssim
-from super_resolution.sr_utils.lapswd import LapSWDRef
+from super_resolution.sr_utils.image import gaussian_pyramid, laplacian_pyramid
 
 
-def np_swd(x,y, lap=False, ref=False):
-    x_ = torch.from_numpy(x).permute(2,0,1).unsqueeze(0).float().to(device)
-    y_ = torch.from_numpy(y).permute(2, 0, 1).unsqueeze(0).float().to(device)
-    if lap:
-        d = x_.shape[-1]
-        x_ = Resize(d, antialias=True)(Resize(d//2, antialias=True)(x_))
-        y_ = Resize(d, antialias=True)(Resize(d//2, antialias=True)(y_))
-        if ref:
-            return LapSWDRef()(x_,y_)
-    torch.cuda.empty_cache()
-    loss = PatchSWDLoss()(x_,y_)
-    return loss
+def swd(x, y):
+    n=6
+    lap_pyrx = laplacian_pyramid(x, n)
+    lap_pyry = laplacian_pyramid(y, n)
+    pyrx = gaussian_pyramid(x, n)
+    pyry = gaussian_pyramid(y, n)
+    losses = []
+    for i in range(n+1):
+        # losses.append(PatchSWDLoss(num_proj=128)(x_, y_).item())
+        losses.append(f"{pyrx[i].shape[-1]}: {PatchSWDLoss(num_proj=64, c=x.shape[1])(pyrx[i], pyry[i]).item():.5f}, "
+                      f"LAP: {PatchSWDLoss(num_proj=64, c=x.shape[1])(lap_pyrx[i], lap_pyry[i]).item():.5f}")
+    # return np.mean(losses)
+    return "\n".join(losses)
 
-
-
+def to_numpy(img):
+    return img[0].permute(1,2,0).detach().cpu().numpy()
 
 if __name__ == '__main__':
-    device = torch.device("cpu")
+    gray=False
+    device = torch.device("cuda:0")
     with torch.no_grad():
         s = 3
         bbox_dict = defaultdict(lambda : ((0.5, 0.5, 0.125), (0.5, 0.125, 0.125), (0.125, 0.5, 0.125)))
@@ -46,7 +49,9 @@ if __name__ == '__main__':
             img_name = dirname.split("_")[0]
             bboxes = bbox_dict[img_name]
 
-            gt_img = np.array(Image.open(os.path.join(img_dir, "1-GT.png")))
+            gt_img_pt = load_image(os.path.join(img_dir, "1-GT.png"), gray).to(device)
+            gt_img_np = np.array(Image.open(os.path.join(img_dir, "1-GT.png")))
+            # gt_img_np = to_numpy(gt_img_pt)
 
             paths = [os.path.join(img_dir, "1-GT.png"), os.path.join(img_dir, "2-initial_guess.png")]
             paths += sorted([os.path.join(img_dir, fname) for fname in os.listdir(img_dir) if fname.startswith("3")])
@@ -58,17 +63,18 @@ if __name__ == '__main__':
 
             for i, path in enumerate(paths):
                 print(path)
-                img = np.array(Image.open(path))
-                dim = img.shape[-2]
+                img_pt = load_image(path, gray).to(device)
+                dim = img_pt.shape[-2]
+                img_np = np.array(Image.open(path))
                 for j, (x,y,d) in enumerate(bboxes):
                     x,y,d = int(x*dim), int(y*dim), int(d * dim)
                     # if i == 0:
                     #     img_with_rects = cv2.rectangle(img, (x,y), (x+d, y+d), (255,0,0), s)
                     # else:
                     #     img_with_rects = img
-                    axes[j+1, i].imshow(img[y:y+d, x:x+d])
+                    axes[j+1, i].imshow(img_np[y:y+d, x:x+d])
                     axes[j+1, i].axis('off')
-                axes[0, i].imshow(img)
+                axes[0, i].imshow(img_np)
                 axes[0, i].axis('off')
                 name=os.path.splitext(os.path.basename(path))[0]
                 if name.startswith("3-"):
@@ -77,12 +83,10 @@ if __name__ == '__main__':
                     name = "bilinear"
                 if name == "1-GT":
                     name = "GT"
-                name += f"\nPSNR: {calculate_psnr(gt_img, img):.2f} " \
-                        f"\nSSIM: {calculate_ssim(img, gt_img): .2f} " \
-                        f"\nSWD(7x1): {np_swd(img, gt_img):.2f}" \
-                        f"\nLapSWD(7x1): {np_swd(img, gt_img, lap=True):.2f}" \
-                        f"\nLapSWDRef: {np_swd(img, gt_img, lap=True, ref=True):.2f}"
-                axes[0, i].set_title(name, fontsize=5*s)
+                name += f"\nPSNR: {calculate_psnr(gt_img_np, img_np):.2f} " \
+                        f"\nSSIM: {calculate_ssim(gt_img_np, img_np): .2f} " \
+                        f"\nPyramid-SWD:\n {swd(img_pt, gt_img_pt)}"
+                axes[0, i].set_title(name, fontsize=4*s)
 
             plt.tight_layout()
             plt.savefig(os.path.join(img_dir, "5-comparison.png"))

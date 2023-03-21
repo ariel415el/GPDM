@@ -50,11 +50,12 @@ def compute_swd(projx, projy):
 
 def dump_hists(refernce_image, low_res, output_images, path):
     p = 7
+    c = refernce_image.shape[1]
     nbins=100
     filters = [
-         (get_random_filters(p)[0], "Random"),
+         (get_random_filters(p, c=c)[0], "Random"),
          # (get_random_filters(p)[0], "Random"),
-         (get_gabor_filters(p)[7], "Gabor"),
+         (get_gabor_filters(p, c=c)[7], "Gabor"),
          # (get_gabor_filters(p)[15], "Gabor")
     ]
 
