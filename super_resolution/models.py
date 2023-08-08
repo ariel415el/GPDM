@@ -200,8 +200,10 @@ class TwoScalesSWD:
     def loss(self, image):
         from torchvision.transforms import Resize
         self.criteria.init()
-        sr_filters = self.criteria.rand.to(image.device)
-        lr_filters = Resize(self.p//self.scale_factor, antialias=True)(sr_filters.clone())
+        # sr_filters = self.criteria.rand.to(image.device)
+        # lr_filters = Resize(self.p//self.scale_factor, antialias=True)(sr_filters.clone())
+        lr_filters = self.criteria.rand.to(image.device)
+        sr_filters = Resize(self.p*self.scale_factor, antialias=True)(lr_filters.clone())
         projy = F.conv2d(image, sr_filters).transpose(1,0).reshape(self.n_proj, -1)
         projx = F.conv2d(self.ref_image, lr_filters).transpose(1,0).reshape(self.n_proj, -1)
 
@@ -213,6 +215,12 @@ class TwoScalesSWD:
         loss = torch.abs(projx - projy).mean()
         return loss
 
+    def run(self, init_image):
+        img, losses = match_patch_distributions(init_image, self.loss, self.num_steps, self.lr)
+        if self.gradient_projector is not None:
+            img = self.gradient_projector(img)
+        img = torch.clip(img.detach(), -1, 1)
+        return img, losses
 
 class GD_gradient_projector:
     def __init__(self, corrupt_image, operator, n_steps=100, lr=0.0001, reg_weight=0):

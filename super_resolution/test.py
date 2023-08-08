@@ -74,8 +74,12 @@ if __name__ == '__main__':
 
     # Define models
     models = [
+        # Fixe vs resample:
+        # DirectSWD(refernce_image, p=args.p, s=args.s, mode="Resample", num_steps=args.num_steps, n_proj=args.n_proj),
+        # DirectSWD(refernce_image, p=args.p, s=args.s, mode="Fixed", num_steps=args.num_steps, n_proj=args.n_proj),
+
         # # Patch sizes
-        DirectSWD(refernce_image, p=8, s=1, mode="Resample", num_steps=args.num_steps, n_proj=args.n_proj, lr=100),
+        # DirectSWD(refernce_image, p=8, s=1, mode="Resample", num_steps=args.num_steps, n_proj=args.n_proj, lr=100),
         # DirectSWD(refernce_image, p=16, s=2, mode="Resample", num_steps=args.num_steps, n_proj=args.n_proj),
         # DirectSWD(refernce_image, p=32, s=1, mode="Resample", num_steps=args.num_steps, n_proj=args.n_proj),
         # MSSWD(refernce_image, ps=(3, 5, 7, 9, 11), s=1, mode="Resample", num_steps=args.num_steps, n_proj=args.n_proj, lr=50),
@@ -101,8 +105,8 @@ if __name__ == '__main__':
         #           gradient_projector=back_projector(corrupt_image, operator, n_steps=100), name="BackProject"),
 
         # # Self
-        # TwoScalesSWD(corrupt_image, scale_factor=4, p=args.p, s=args.s, mode="Resample", num_steps=args.num_steps, n_proj=args.n_proj, name="self-rescaled"),
-        # DirectSWD(corrupt_image, p=args.p, s=args.s, mode="Resample", num_steps=args.num_steps, n_proj=args.n_proj, name="self"),
+        TwoScalesSWD(corrupt_image, scale_factor=4, p=args.p, s=args.s, mode="Resample", num_steps=args.num_steps, n_proj=args.n_proj, name="self-rescaled"),
+        DirectSWD(corrupt_image, p=args.p, s=args.s, mode="Resample", num_steps=args.num_steps, n_proj=args.n_proj, name="self"),
         # DirectSWD(corrupt_image, p=args.p, s=args.s, mode="Resample", num_steps=args.num_steps, n_proj=args.n_proj, name="self-PGD",
         #           gradient_projector=gradient_projector),
         # DirectSWD(corrupt_image, p=args.p, s=args.s, mode="Resample", num_steps=args.num_steps, n_proj=args.n_proj, name="self-PGDreg",

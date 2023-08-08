@@ -1,8 +1,10 @@
+import os
+import sys
 import torch
 from matplotlib import pyplot as plt
-
-from super_resolution.debug_utils import plot_hists, plot_img
-from super_resolution.predefined_filters import get_random_filters, get_gabor_filters, appply_filter, resize_filters
+sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+from sr_utils.debug_utils import plot_hists, plot_img
+from sr_utils.predefined_filters import get_random_filters, get_gabor_filters, appply_filter, resize_filters, normalize_filters
 
 
 def split_list_randomly(values):
@@ -13,22 +15,21 @@ def split_list_randomly(values):
     return l1,l2
 
 
-def compare_resized_histograms(p, reverse=True):
-    factor = 4
+def compare_resized_histograms(factor, p, reverse=True):
     low_res = Resize(int(im_size // factor), antialias=True)(hig_res)
 
     if reverse:
         p = factor * p
         factor = 1/factor
 
-    rand_projs = get_random_filters(p, n=50)
+    rand_projs = normalize_filters(get_random_filters(p, n=50))
     # naive_projs = get_naive_kernels(p)
-    gabor_projs = get_gabor_filters(p)
+    gabor_projs = normalize_filters(get_gabor_filters(p))
 
 
-    resized_rand_projs = resize_filters(rand_projs, p, factor)
+    resized_rand_projs = resize_filters(rand_projs, p, factor, normalize=True)
     # resized_naive_projs = resize_filters(naive_projs, p, factor, False)
-    resized_gabor_projs = resize_filters(gabor_projs, p, factor)
+    resized_gabor_projs = resize_filters(gabor_projs, p, factor, normalize=True)
 
     filters = [
                 (rand_projs[0], resized_rand_projs[0], f"Random"),
@@ -60,9 +61,7 @@ def compare_resized_histograms(p, reverse=True):
     plt.show()
 
 
-def hist_sanity():
-    p=5
-    factor=4
+def hist_sanity(factor, p):
     low_res = Resize(int(im_size // factor), antialias=True)(hig_res)
     low_res_big = Resize(im_size, antialias=True)(low_res)
 
@@ -108,9 +107,11 @@ if __name__ == '__main__':
     device = torch.device("cpu")
     im_size = 1024
     nbins = 100
-    hig_res = load_image('../data/images/SR/fox2.jpg').to(device)
+    hig_res = load_image('data/images/SR/fox2.jpg').to(device)
     hig_res = Resize(im_size, antialias=True)(hig_res)
 
-    hist_sanity()
-    compare_resized_histograms(p=5, reverse=True)
-    compare_resized_histograms(p=5, reverse=False)
+    factor = 2
+    p=2
+    hist_sanity(factor, p)
+    compare_resized_histograms(factor, p, reverse=True)
+    compare_resized_histograms(factor, p, reverse=False)

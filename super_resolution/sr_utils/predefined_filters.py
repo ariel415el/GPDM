@@ -70,7 +70,7 @@ def get_random_filters(p, n=1, c=3):
     rand = torch.randn(n, c * p ** 2)  # (slice_size**2*ch)
     rand = rand / torch.norm(rand, dim=1, keepdim=True)  # noramlize to unit directions
     rand = rand.reshape(n, c, p, p)
-    rand /= torch.sum(rand, dim=(1,2,3), keepdim=True)
+    # rand /= torch.sum(rand, dim=(1,2,3), keepdim=True)
     return rand
 
 
