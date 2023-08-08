@@ -1,4 +1,5 @@
 import os
+from math import sqrt
 
 from PIL import Image
 import numpy as np
@@ -21,23 +22,20 @@ def load_image(path, gray=False):
     return img
 
 
-def read_data(path):
+def read_data(path, max_inputs):
     if os.path.isdir(path):
-        refernce_images = torch.cat([load_image(f'{path}/{x}') for x in os.listdir(path)], dim=0)
+        paths = [f'{path}/{x}' for x in os.listdir(path)]
+        if max_inputs is not None:
+            paths = paths[:max_inputs]
+        refernce_images = torch.cat([load_image(p) for p in paths], dim=0)
     else:
         refernce_images = load_image(path)
     return refernce_images
 
 
-def dump_images(images, out_dir):
-    if os.path.exists(out_dir):
-        i = len(os.listdir(out_dir))
-    else:
-        i = 0
-        os.makedirs(out_dir)
-    for j in range(images.shape[0]):
-        save_image(images[j], os.path.join(out_dir, f"{i}.png"), normalize=True)
-        i += 1
+def dump_images(batch, out_dir):
+    nrow = int(sqrt(len(batch)))
+    save_image((batch + 1)/2, os.path.join(out_dir, "outputs.png"), nrow=nrow, normalize=False, pad_value=1, scale_each=True)
 
 def show_nns(images, ref_images, out_dir):
     nn_indices = []
