@@ -36,6 +36,7 @@ def read_data(path, max_inputs):
 
 
 def dump_images(batch, out_dir):
+    os.makedirs(out_dir, exist_ok=True)
     nrow = int(sqrt(len(batch)))
     save_image((batch + 1)/2, os.path.join(out_dir, "outputs.png"), nrow=nrow, normalize=False, pad_value=1, scale_each=True)
 
