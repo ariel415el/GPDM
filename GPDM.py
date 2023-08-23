@@ -69,7 +69,6 @@ def _match_patch_distributions(synthesized_images, reference_images, criteria, n
     optim = torch.optim.Adam([synthesized_images], lr=lr)
     losses = []
     for i in range(num_steps):
-        criteria.init()
         # Optimize image
         optim.zero_grad()
         loss = criteria(synthesized_images, reference_images)

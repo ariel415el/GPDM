@@ -160,7 +160,6 @@ class GMMSWD(DirectSWD):
         self.gradient_projector = gradient_projector
 
         criteria = PatchSWDLoss(patch_size=self.p, stride=self.s, num_proj=self.n_proj, c=ref_image.shape[1])
-        criteria.init()
 
         self.rand = criteria.rand.to(ref_image.device)
         projx = F.conv2d(ref_image, self.rand).transpose(1,0).reshape(self.n_proj, -1)
@@ -199,7 +198,7 @@ class TwoScalesSWD:
 
     def loss(self, image):
         from torchvision.transforms import Resize
-        self.criteria.init()
+        self.criteria.sample_projections()
         # sr_filters = self.criteria.rand.to(image.device)
         # lr_filters = Resize(self.p//self.scale_factor, antialias=True)(sr_filters.clone())
         lr_filters = self.criteria.rand.to(image.device)

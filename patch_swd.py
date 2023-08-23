@@ -10,15 +10,17 @@ class PatchSWDLoss(torch.nn.Module):
         self.num_proj = num_proj
         self.l2 = l2
         self.c = c
-        self.init()
+        self.sample_projections()
 
-    def init(self):
+    def sample_projections(self):
         # Sample random normalized projections
         rand = torch.randn(self.num_proj, self.c*self.patch_size**2) # (slice_size**2*ch)
         rand = rand / torch.norm(rand, dim=1, keepdim=True)  # noramlize to unit directions
         self.rand = rand.reshape(self.num_proj, self.c, self.patch_size, self.patch_size)
 
-    def forward(self, x, y):
+    def forward(self, x, y, reset_projections=True):
+        if reset_projections:
+            self.sample_projections()
         self.rand = self.rand.to(x.device)
         # Project patches
         projx = F.conv2d(x, self.rand).transpose(1,0).reshape(self.num_proj, -1)
