@@ -45,14 +45,16 @@ def dump_images(batch, out_dir):
 
 
 def to_np(img):
-    img = img.mul(255).add_(0.5).clamp_(0, 255)
+    img = img.add_(1).div(2).mul(255).clamp_(0, 255)
     if len(img.shape) == 3:
         img = img.permute(1, 2, 0)
     return img.to("cpu", torch.uint8).cpu().numpy()
 
+
 def show_nns(outputs, ref_images, out_dir, n=16):
     # nn_indices = []
-    s=4
+    s=2
+    n = min(n,len(outputs))
     fig, axes = plt.subplots(2, n, figsize=(s * n, s * 2))
     for i in range(n):
         dists = torch.mean((ref_images - outputs[i].unsqueeze(0))**2, dim=(1,2,3))
@@ -61,7 +63,7 @@ def show_nns(outputs, ref_images, out_dir, n=16):
         axes[0, i].axis('off')
         axes[1, i].imshow(to_np(ref_images[j]))
         axes[1, i].axis('off')
-        axes[1, i].set_title(f"NN L2:{(outputs[i] - ref_images[j]).pow(2).sum()}")
+        axes[1, i].set_title(f"NN L2: {(outputs[i] - ref_images[j]).pow(2).sum():.3f}")
     plt.tight_layout()
     plt.savefig(os.path.join(out_dir, f"NNs.png"))
         # nn_indices.append(j)
