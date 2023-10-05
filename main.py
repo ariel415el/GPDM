@@ -15,6 +15,7 @@ def parse_args():
     parser.add_argument('--output_dir', default="outputs", help="Where to put the results")
     parser.add_argument('--debug', action='store_true', default=False, help="Dump debug images")
     parser.add_argument('--device', default="cuda:0")
+    parser.add_argument('--gray_scale', default=False, action='store_true', help="Convert inputs to gray scale")
 
     # SWD parameters
     parser.add_argument('--patch_size', type=int, default=7)
@@ -50,7 +51,7 @@ def parse_args():
 if __name__ == '__main__':
     args = parse_args()
 
-    refernce_images = read_data(args.target_image, args.max_inputs)
+    refernce_images = read_data(args.target_image, args.max_inputs, args.gray_scale)
 
     criteria = PatchSWDLoss(patch_size=args.patch_size, stride=args.stride, num_proj=args.num_proj, c=refernce_images.shape[1])
 

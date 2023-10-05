@@ -9,32 +9,34 @@ from matplotlib import pyplot as plt
 from torchvision.utils import save_image
 from torchvision import transforms as T
 
-def get_transforms(center_crop):
+
+def get_transforms(center_crop, gray_scale):
     transforms = [T.ToTensor()]
     if center_crop is not None: transforms += [T.CenterCrop(size=center_crop)]
+    if gray_scale: transforms += [T.Grayscale()]
     transforms+=[T.Normalize((0.5,), (0.5,))]
     return T.Compose(transforms)
 
 
-def load_image(path, make_square=False):
+def load_image(path, make_square=False, gray_scale=False):
     img = Image.open(path).convert('RGB')
-    transforms = get_transforms(center_crop=min(img.size[:2]) if make_square else None)
+    transforms = get_transforms(center_crop=min(img.size[:2]) if make_square else None, gray_scale=gray_scale)
     img = transforms(img).unsqueeze(0)
     return img
 
 
-def read_data(path, max_inputs):
+def read_data(path, max_inputs, gray_scale):
     if os.path.isdir(path):
         paths = [f'{path}/{x}' for x in os.listdir(path)]
         if max_inputs is not None:
             paths = paths[:max_inputs]
         data = []
         for p in tqdm(paths):
-            data.append(load_image(p, make_square=True))
+            data.append(load_image(p, make_square=True, gray_scale=gray_scale))
         refernce_images = torch.cat(data, dim=0)
         print("# Warning! Center cropping non square inputs if any")
     else:
-        refernce_images = load_image(path)
+        refernce_images = load_image(path, gray_scale=gray_scale)
     return refernce_images
 
 
@@ -45,6 +47,8 @@ def dump_images(batch, out_dir):
 
 
 def to_np(img):
+    if img.shape[0] == 1:
+        img = img.repeat(3,1,1)
     img = img.add_(1).div(2).mul(255).clamp_(0, 255)
     if len(img.shape) == 3:
         img = img.permute(1, 2, 0)
